@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.+[^/])$ %{REQUEST_URI}/ [R=307,L]
+
+    # Route everything to index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
