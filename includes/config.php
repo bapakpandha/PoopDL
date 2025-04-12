@@ -3,6 +3,12 @@
  * Konfigurasi utama untuk API backend
  */
 
+ //error_reporting(E_ERROR | E_PARSE);
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+date_default_timezone_set('Asia/Jakarta');
+//session_start();
+
 return [
     // Aktifkan atau nonaktifkan fitur penyimpanan history ke database
     'enable_history' => true,
@@ -30,7 +36,5 @@ return [
 
     // Parameter URL untuk streaming
     'stream_url_param' => 'pplayer?id=',
-
-
 
 ];

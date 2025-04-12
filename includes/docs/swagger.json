@@ -1,0 +1,190 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "2.1.0",
+    "title": "POOPDL API Documentation 2025",
+    "description": "API documentation for the scraping and history management endpoints."
+  },
+  "host": "api.srikeminut.com",
+  "basePath": "/poop_dlV2/api",
+  "schemes": ["https", "http"],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Redirect to API documentation",
+        "responses": {
+          "302": {
+            "description": "Redirect to /docs"
+          }
+        }
+      }
+    },
+    "/docs": {
+      "get": {
+        "summary": "Serve API documentation",
+        "responses": {
+          "200": {
+            "description": "API documentation served"
+          },
+          "404": {
+            "description": "Documentation not found"
+          }
+        }
+      }
+    },
+    "/get": {
+      "post": {
+        "summary": "Scrape a single Video URL",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "example": "https://poophd.pm/d/0f2lq9xju0ga"
+                }
+              },
+              "required": ["url"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scraping result"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/bulk": {
+      "post": {
+        "summary": "Scrape Folder Type URL",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                    "example": "https://poophd.pm/f/zubgii6xihg"
+                }
+              },
+              "required": ["url"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk scraping result"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/history/search": {
+      "post": {
+        "summary": "Search history",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "domain_url": { "type": "string" },
+                "video_title": { "type": "string" },
+                "decoded_src": { "type": "string" },
+                "date_start": { "type": "string", "format": "date-time" },
+                "date_end": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/history/export": {
+      "post": {
+        "summary": "Export history",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "domain_url": { "type": "string" },
+                "video_title": { "type": "string" },
+                "decoded_src": { "type": "string" },
+                "date_start": { "type": "string", "format": "date-time" },
+                "date_end": { "type": "string", "format": "date-time" },
+                "format": { "type": "string", "enum": ["json", "csv"], "default": "json" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exported data"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/history": {
+      "post": {
+        "summary": "Fetch paginated history",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "page": { "type": "integer", "default": 1 },
+                "per_page": { "type": "integer", "default": 10 }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated history data"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    }
+  }
+}

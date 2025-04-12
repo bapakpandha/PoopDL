@@ -38,7 +38,34 @@ function jsonResponse($status, $message, $data = null, $extra = []) {
 
 // Routing
 if ($method === 'GET' && $endpoint === '') {
-        echo jsonResponse('success', 'Welcome to the API backend');
+        header('Location: docs');
+        exit;
+    exit;
+}
+
+if ($method === 'GET' && $endpoint === 'docs') {
+    $docsFile = __DIR__ . '/../includes/docs/index.php';
+    if (file_exists($docsFile)) {
+        include $docsFile;
+    } else {
+        http_response_code(404);
+        echo 'Docs not found.';
+    }
+    exit;
+}   
+
+// SWAGGER UI swagger.json
+if (preg_match('#^docs/(.+)$#', $endpoint, $matches)) {
+    $file = __DIR__ . '/../includes/docs/' . $matches[1];
+
+    if (file_exists($file) && is_file($file)) {
+        $mime = mime_content_type($file);
+        header("Content-Type: $mime");
+        readfile($file);
+    } else {
+        http_response_code(404);
+        echo 'File not found.';
+    }
     exit;
 }
 
