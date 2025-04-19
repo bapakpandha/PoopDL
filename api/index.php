@@ -83,6 +83,18 @@ if ($method === 'POST' && $endpoint === 'get') {
     exit;
 }
 
+// if ($method === 'POST' && $endpoint === 'get/steps') {
+//     // POST /steps => scraping persteps
+//     $input = json_decode(file_get_contents('php://input'), true);
+//     if (!isset($input['url'])) {
+//             echo jsonResponse('error', 'Parameter "url" wajib ada');
+//         exit;
+//     }
+//     require_once __DIR__ . '/../includes/steps/steps.php';
+//     echo "steps";
+//     exit;
+// }
+
 if ($method === 'POST' && $endpoint === 'bulk') {
     // POST /bulk => scraping banyak
     $input = json_decode(file_get_contents('php://input'), true);

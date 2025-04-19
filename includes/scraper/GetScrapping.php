@@ -9,7 +9,7 @@ class GetScrapping {
     }
 
     public function process($url) {
-        if (!preg_match('/https?:\/\/(.+?)\/d\/([a-zA-Z0-9]+)/', $url, $matches)) {
+        if (!preg_match('/https?:\/\/(.+?)\/(d|e)\/([a-zA-Z0-9]+)/', $url, $matches)) {
             return $this->error("URL tidak valid");
         }
 
