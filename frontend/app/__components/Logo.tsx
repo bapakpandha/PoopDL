@@ -10,7 +10,7 @@ const logoFont = LogoFont({
 const LogoText = () => {
   return (
     <div className={`${logoFont.className} text-xl font-normal select-none`}>
-      LogoText
+      PoopDL
     </div>
   )
 }

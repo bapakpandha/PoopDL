@@ -88,36 +88,40 @@ class GetVideoSrc
 
     private function smartEncodeUrl($url)
     {
-        $parts = parse_url($url);
-    
-        $encodedUrl = $parts['scheme'] . '://' . $parts['host'];
-    
-        if (isset($parts['port'])) {
-            $encodedUrl .= ':' . $parts['port'];
+        // Pisahkan dulu bagian fragment (jika ada)
+        $fragment = '';
+        if (strpos($url, '#') !== false) {
+            [$url, $fragment] = explode('#', $url, 2);
         }
     
-        if (isset($parts['path'])) {
-            // Pisahkan berdasarkan slash dan encode setiap segmen path
-            $segments = explode('/', $parts['path']);
-            $encodedSegments = array_map('rawurlencode', $segments);
-            $encodedUrl .= implode('/', $encodedSegments);
+        // Pisahkan query string (jika ada)
+        $query = '';
+        if (strpos($url, '?') !== false) {
+            [$url, $query] = explode('?', $url, 2);
         }
     
-        if (isset($parts['query'])) {
-            // Pisah query param, encode valuenya saja
-            $queryParts = explode('&', $parts['query']);
-            $encodedQueryParts = [];
+        // Pisahkan scheme dan host
+        if (preg_match('/^(https?:\/\/[^\/]+)(\/.*)?$/', $url, $m)) {
+            $base = $m[1];
+            $path = isset($m[2]) ? $m[2] : '';
+        } else {
+            return $url; // fallback, invalid URL
+        }
     
-            foreach ($queryParts as $q) {
-                if (strpos($q, '=') !== false) {
-                    [$key, $val] = explode('=', $q, 2);
-                    $encodedQueryParts[] = $key . '=' . rawurlencode($val);
-                } else {
-                    $encodedQueryParts[] = rawurlencode($q);
-                }
-            }
+        // Encode setiap segmen path
+        $segments = explode('/', $path);
+        $encodedSegments = array_map('rawurlencode', $segments);
+        $encodedPath = implode('/', $encodedSegments);
     
-            $encodedUrl .= '?' . implode('&', $encodedQueryParts);
+        // Rebuild URL
+        $encodedUrl = $base . $encodedPath;
+    
+        if ($query) {
+            $encodedUrl .= '?' . $query; // biarkan query apa adanya atau bisa di-parse & encode valuenya
+        }
+    
+        if ($fragment) {
+            $encodedUrl .= '#' . rawurlencode($fragment);
         }
     
         return $encodedUrl;

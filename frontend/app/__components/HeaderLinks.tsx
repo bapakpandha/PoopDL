@@ -10,52 +10,29 @@ export const navItems: NavItem[] = [
     label: "Home", 
     link: "/" 
   },
-  {label: "Features",
+  {label: "Tools",
   link: "#",
   children: [
     {
       label: "Home",
       link: "/",
-      // iconImage: todoImage
     },
     {
-      label: "Bulk",
+      label: "Bulk Download",
       link: "/bulk",
     },
     {
       label: "History",
       link: "/history",
-    },
-    {
-      label: "Planning",
-      link: "#",
     }
   ]
   },
 {
-  label: "Compnay",
-    link: "#",
-      children: [
-        {
-          label: "History",
-          link: "history",
-        },
-        {
-          label: "Our Team",
-          link: "#"
-        },
-        {
-          label: "Blog",
-          link: "#"
-        }
-      ]
-},
-{
-  label: "Careers",
+  label: "About Us",
     link: "#"
 },
 {
-  label: "About",
+  label: "Contact Us",
     link: "#"
 }
 ];

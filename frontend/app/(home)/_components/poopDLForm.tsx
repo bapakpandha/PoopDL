@@ -9,7 +9,7 @@ import 'video.js/dist/video-js.css';
 const FormValidations = {
     url: {
         REGEX: /https?:\/\/(.+?)\/(d|e)\/([a-zA-Z0-9]+)/,
-        ERROR_MESSAGE: "Please enter a valid Instagram URL (post or reel).",
+        ERROR_MESSAGE: "Please enter a valid PoopDL URL.",
     },
 };
 /* eslint-disable @typescript-eslint/no-explicit-any */

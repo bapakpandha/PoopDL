@@ -16,6 +16,14 @@ if (!is_int($step) || $step < 1) {
 
 $url = isset($input['url']) ? $input['url'] : null;
 
+// db dimasukkan ke step 2
+$config = !empty($config) ? $config : include __DIR__ . '/../config.php';
+$isDbEnabled = $config['enable_history'] ?? false;
+if ($isDbEnabled) {
+    require_once __DIR__ . '/../db/DbHandle.php';
+    $db = new DbHandle();
+}
+
 // Routing berdasarkan step
 switch ($step) {
     case 1:
@@ -29,6 +37,18 @@ switch ($step) {
         require_once __DIR__ . '/steps/GetMetrolaguPostIdAndDetail.php';
         $getMetrolaguPostIdAndDetail = new GetMetrolaguPostIdAndDetail();
         $result = $getMetrolaguPostIdAndDetail->process($url);
+        if ($isDbEnabled && $result['status'] == 'success') {
+            $db->insertHistoryV2([
+                'video_id'      => $result['data']['video_id'],
+                'domain'        => $result['data']['domain'],
+                'title'         => $result['data']['title'],
+                'length'        => $getMetrolaguPostIdAndDetail->convertDurationToSeconds($result['data']['length']),
+                'size'          => $getMetrolaguPostIdAndDetail->convertSizeToBytes($result['data']['size']),
+                'thumbnail_url' => $result['data']['thumbnail'],
+                'upload_at'     => $getMetrolaguPostIdAndDetail->convertTanggalToDate($result['data']['uploadate']),
+                'user_ip'       => $_SERVER['REMOTE_ADDR'] ?? null,
+            ]);
+        }
         echo json_encode($result);
         break;
 
@@ -36,6 +56,12 @@ switch ($step) {
         require_once __DIR__ . '/steps/GetVidSrcPlayerUrl.php';
         $getVidSrcPlayerUrl = new GetVidSrcPlayerUrl();
         $result = $getVidSrcPlayerUrl->process($input['metrolagu_post_id']);
+        if ($isDbEnabled && $result['status'] == 'success') {
+            $db->insertHistoryV2([
+                'video_id'      => $result['data']['video_id'],
+                'player_url'   => $result['data']['fullURL'],
+            ]);
+        }
         echo json_encode($result);
         break;
 
@@ -45,6 +71,12 @@ switch ($step) {
         $fullURL = $input['fullURL'] ?? '';
         $baseURL = $input['baseURL'] ?? '';
         $result = $getVideoSrc->process($fullURL, $baseURL);
+        if ($isDbEnabled && $result['status'] == 'success') {
+            $db->insertHistoryV2([
+                'video_id'      => $input['video_id'],
+                'video_src'   => $result['data']['video_src'],
+            ]);
+        }
         echo json_encode($result);
         break;
 
@@ -60,7 +92,19 @@ switch ($step) {
         require_once __DIR__ . '/steps/ScrapingDoodStream.php';
         $scrapingDoodstream = new ScrapingDoodStream();
         $doodstreamURL = $input['iframe_src'] ?? '';
+        $url = $input['url'] ?? null;
         $result = $scrapingDoodstream->process($doodstreamURL);
+        if ($isDbEnabled && $result['status'] == 'success')  {
+            require_once __DIR__ . '/steps/GetMetrolaguPostIdAndDetail.php';
+            $getMetrolaguPostIdAndDetail = new GetMetrolaguPostIdAndDetail();
+            $urlAndDomain = $getMetrolaguPostIdAndDetail->getDomainAndVideoId($url);
+            if ($urlAndDomain['video_id'] !== null) {
+                $db->insertHistoryV2([
+                    'video_id'      => $urlAndDomain['video_id'],
+                    'video_src'   => $result['data']['video_src'],
+                ]);
+            }
+        }
         echo json_encode($result);
         break;
     
