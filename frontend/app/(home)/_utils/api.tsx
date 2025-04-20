@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function scrapeVideoStep(step: number, payload: any) {
     // const res = await fetch("http://127.0.0.13/api/get/steps/", {
-    const res = await fetch("/api/get/steps/", {
+    const res = await fetch("/poop_dl/api/get/steps/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
