@@ -56,3 +56,76 @@ Update Metode Scrapping Video V2 (25.04.18) API long polling method (Client meng
     Jika berhasil menemukan pola seperti diatas, dapatkan value dari parameter ketiga dari, fungsi player yaitu /xstream?key=VsMLC-Lagi Ber... atau https://video-src.com/VkVrC...
     Jika berbentuk (/xstream?key=VsMLC-Lagi Ber...) maka tambahkan baseURL sehingga menjadi https://poophd.video-src.com/xstream?key=VsMLC-Lagi Ber...
     Lalu informasikan ke FE url tersebut. dan katakan ke FE bahwa scrapping tahap ke 8 berhasil.
+
+
+REQUEST DETAIL:
+    step 1:
+        request:
+            {
+                "url": "https://poop.onl/d/25yh9w55qnof",
+                "step": 1
+            }
+        response:
+        {
+            "status": "success",
+            "message": "Memproses Tautan...",
+            "data": {
+                "url": "https://poop.onl/d/25yh9w55qnof"
+            },
+            "step": 1
+        }
+    step 2:
+        request:
+            {
+                "url": "https://poop.onl/d/25yh9w55qnof",
+                "step": 2
+            }
+        response:
+            {
+                "status": "success",
+                "message": "Data berhasil diambil.",
+                "step": 2,
+                "data": {
+                    "title": "dokter viral",
+                    "length": "20:23",
+                    "size": "199.34 MB",
+                    "uploadate": "19 April 2025",
+                    "metrolagu_post_id": "666f6e713535773968793532"
+                }
+            }
+    step 3:
+        request:
+            {
+                "url": "https://poop.onl/d/25yh9w55qnof",
+                "step": 3,
+                "metrolagu_post_id": "666f6e713535773968793532"
+            }
+        response:
+            {
+                "status": "success",
+                "message": "Tahap 3 berhasil",
+                "step": 3,
+                "data": {
+                    "videoId": "25yh9w55qnof",
+                    "baseURL": "https://poophd.video-src.com/",
+                    "playerPath": "vplayer?id=25yh9w55qnof",
+                    "fullURL": "https://poophd.video-src.com/vplayer?id=25yh9w55qnof"
+                }
+            }
+    step 4:
+        request:
+            {
+                "step": 4,
+                "url": "https://poop.onl/d/p1cnb4t4cymq",
+                "fullURL": "https://poophd.video-src.com/pplayer?id=uxeu9csuotta",
+                "baseURL": "https://poophd.video-src.com/"
+            }
+        response:
+        {
+            "status": "success",
+            "message": "Tahap 4 berhasil. Video URL ditemukan.",
+            "step": 4,
+            "data": {
+                "video_src": "https://video-src.com/awc09pLqk-ianmrh9hbabc.mp4"
+            }
+        }

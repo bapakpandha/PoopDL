@@ -83,17 +83,28 @@ if ($method === 'POST' && $endpoint === 'get') {
     exit;
 }
 
-// if ($method === 'POST' && $endpoint === 'get/steps') {
-//     // POST /steps => scraping persteps
-//     $input = json_decode(file_get_contents('php://input'), true);
-//     if (!isset($input['url'])) {
-//             echo jsonResponse('error', 'Parameter "url" wajib ada');
-//         exit;
-//     }
-//     require_once __DIR__ . '/../includes/steps/steps.php';
-//     echo "steps";
-//     exit;
-// }
+if ($method === 'POST' && $endpoint === 'v2/get') {
+    // POST /steps => scraping persteps
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!isset($input['url'])) {
+            echo jsonResponse('error', 'Parameter "url" wajib ada');
+        exit;
+    }
+    $result = include __DIR__ . '/../includes/steps/direct.php';
+    echo jsonResponse($result['status'], $result['message'], $result['data'] ?? null, $verbose ? ['debug' => $result['debug'] ?? null] : []);
+    exit;
+}
+
+if ($method === 'POST' && $endpoint === 'get/steps') {
+    // POST /steps => scraping persteps
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!isset($input['url'])) {
+            echo jsonResponse('error', 'Parameter "url" wajib ada');
+        exit;
+    }
+    require_once __DIR__ . '/../includes/steps/steps.php';
+    exit;
+}
 
 if ($method === 'POST' && $endpoint === 'bulk') {
     // POST /bulk => scraping banyak
