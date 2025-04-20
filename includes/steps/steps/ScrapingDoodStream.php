@@ -56,15 +56,34 @@ class ScrapingDoodStream
         curl_close($ch);
 
         if ($httpCode >= 400 || !$response) {
-            return [
-                'status' => 'error',
-                'message' => 'Gagal melakukan curl ke Doodstream.com',
-                'data' => [
-                    'url_doodstream' => $doodstreamURL,
-                    'hasil_curl_doodstream' => $response,
-                ],
-                'step' => 6
-            ];
+
+            $ch2 = curl_init($doodstreamURL);
+            curl_setopt_array($ch2, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_HTTPHEADER => [
+                    "Referer: https://{$domain}/",
+                    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+                ]
+            ]);
+    
+            $response = curl_exec($ch2);
+            $httpCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+            curl_close($ch2);
+
+            if ($httpCode >= 400 || !$response) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Gagal melakukan curl ke Doodstream.com',
+                    'data' => [
+                        'url_doodstream' => $doodstreamURL,
+                        'hasil_curl_doodstream' => $response,
+                    ],
+                    'step' => 6
+                ];
+            }
         }
 
         if (preg_match('#/pass_md5/[^"\']+#', $response, $matches_pass_md5)) {

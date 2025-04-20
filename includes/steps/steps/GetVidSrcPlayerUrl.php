@@ -80,7 +80,7 @@ class GetVidSrcPlayerUrl
                 'message' => 'Mendapatkan URL video dari http://www.metrolagu.cam/...',
                 'step' => 3,
                 'data' => [
-                    'videoId' => $videoId,
+                    'video_id' => $videoId,
                     'baseURL' => $baseURL,
                     'playerPath' => $playerPath,
                     'fullURL' => $fullURL

@@ -1,18 +1,22 @@
 <?php
 
-class DbHandle {
+class DbHandle
+{
     private $conn;
     private $historyTable = 'video_downloader_data';
     private $bulkTable = 'bulk_downloader_data';
+    private $historyTableV2 = 'poopDL_video_data';
+    private $bulkTableV2 = 'poopDL_bulk_data';
     private $config;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->config = include __DIR__ . '/../config.php';
         $config = $this->config['db'];
         if (empty($config)) {
             die("Database configuration not found.");
         }
-        
+
         if ($this->config['enable_history'] !== true) {
             die("Database connection is disabled.");
         }
@@ -32,11 +36,15 @@ class DbHandle {
         $this->initTables();
     }
 
-    public function initTables() {
+    public function initTables()
+    {
         $this->createHistoryTable();
         $this->createBulkTable();
+        $this->createHistoryTableV2();
+        $this->createBulkTableV2();
     }
-    private function createHistoryTable() {
+    private function createHistoryTable()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS {$this->historyTable} (
             `id` INT(11) NOT NULL AUTO_INCREMENT,
             `video_id` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
@@ -64,7 +72,8 @@ class DbHandle {
         $this->conn->query($sql);
     }
 
-    private function createBulkTable() {
+    private function createBulkTable()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS {$this->bulkTable} (
             `id` INT(11) NOT NULL AUTO_INCREMENT,
             `url` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
@@ -78,7 +87,59 @@ class DbHandle {
 
         $this->conn->query($sql);
     }
-    public function insertBulkUrl($url) {
+
+    private function createHistoryTableV2()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS {$this->historyTableV2} (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `video_id` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
+            `domain` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `title` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `length` INT(11) NULL DEFAULT NULL,
+            `size` INT(11) NULL DEFAULT NULL,
+            `thumbnail_url` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `player_url` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `video_src` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `upload_at` DATETIME NULL DEFAULT NULL,
+            `user_ip` VARCHAR(45) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `is_bulk` TINYINT(1) NOT NULL DEFAULT 0,
+            `bulk_id` INT(11) NULL DEFAULT NULL,
+            `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`) USING BTREE,
+            UNIQUE INDEX `video_id` (`video_id`) USING BTREE,
+            INDEX `domain` (`domain`) USING BTREE,
+            INDEX `title` (`title`(255)) USING BTREE,
+            INDEX `createdAt` (`createdAt`) USING BTREE,
+            INDEX `user_ip` (`user_ip`) USING BTREE,
+            INDEX `is_bulk` (`is_bulk`) USING BTREE,
+            INDEX `bulk_id` (`bulk_id`) USING BTREE
+        )
+        COLLATE='utf8mb4_unicode_ci'
+        ENGINE=InnoDB
+        ;";
+
+        $this->conn->query($sql);
+    }
+
+    private function createBulkTableV2()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS {$this->bulkTableV2} (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `url` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
+            `timestamp` DATETIME NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`) USING BTREE,
+            UNIQUE INDEX `url` (`url`) USING BTREE
+        )
+        COLLATE='utf8mb4_unicode_ci'
+        ENGINE=InnoDB
+        ;";
+
+        $this->conn->query($sql);
+    }
+
+    public function insertBulkUrl($url)
+    {
         $stmt = $this->conn->prepare("INSERT IGNORE INTO {$this->bulkTable} (url) VALUES (?)");
         $stmt->bind_param("s", $url);
         if ($stmt->execute()) {
@@ -87,7 +148,8 @@ class DbHandle {
         return false;
     }
 
-    public function insertHistory($data) {
+    public function insertHistory($data)
+    {
         $stmt = $this->conn->prepare("
             INSERT IGNORE INTO {$this->historyTable} 
             (video_id, domain_url, hashed_key, auth_bearer, video_title, video_size, video_duration, decoded_src, is_bulk, bulk_url_id, user_ip) 
@@ -112,61 +174,67 @@ class DbHandle {
         return $stmt->execute();
     }
 
-    public function updateBulkHistory($bulk_url_id, $video_id) {
+    public function updateBulkHistory($bulk_url_id, $video_id)
+    {
         $stmt = $this->conn->prepare("UPDATE {$this->historyTable} SET bulk_url_id = ?, is_bulk = 1 WHERE video_id = ?");
         $stmt->bind_param("ss", $bulk_url_id, $video_id);
         return $stmt->execute();
     }
 
-    public function getAllHistory($limit = 100, $offset = 0) {
+    public function getAllHistory($limit = 100, $offset = 0)
+    {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->historyTable} ORDER BY timestamp DESC LIMIT ? OFFSET ?");
         $stmt->bind_param("ii", $limit, $offset);
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function getHistoryById($video_id) {
+    public function getHistoryById($video_id)
+    {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->historyTable} WHERE video_id = ?");
         $stmt->bind_param("s", $video_id);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc();
     }
 
-    public function updateHistory($video_id, $data) {
+    public function updateHistory($video_id, $data)
+    {
         $stmt = $this->conn->prepare("UPDATE {$this->historyTable} SET video_title = ?, video_size = ?, video_duration = ?, decoded_src = ? WHERE video_id = ?");
         $stmt->bind_param("siiss", $data['video_title'], $data['video_size'], $data['video_duration'], $data['decoded_src'], $video_id);
         return $stmt->execute();
     }
 
-    public function deleteHistory($video_id) {
+    public function deleteHistory($video_id)
+    {
         $stmt = $this->conn->prepare("DELETE FROM {$this->historyTable} WHERE video_id = ?");
         $stmt->bind_param("s", $video_id);
         return $stmt->execute();
     }
 
-    public function searchHistory($filters) {
+    public function searchHistory($filters)
+    {
         $query = "SELECT * FROM {$this->historyTable} WHERE 1=1";
         $params = [];
         $types = "";
-    
+
         if (!empty($filters['domain_url'])) {
             $query .= " AND domain_url LIKE ?";
             $params[] = "%" . $filters['domain_url'] . "%";
             $types .= "s";
         }
-    
+
         if (!empty($filters['video_title'])) {
             $query .= " AND video_title LIKE ?";
             $params[] = "%" . $filters['video_title'] . "%";
             $types .= "s";
         }
-    
+
         if (!empty($filters['decoded_src'])) {
             $query .= " AND decoded_src LIKE ?";
             $params[] = "%" . $filters['decoded_src'] . "%";
             $types .= "s";
         }
-    
+
         if (!empty($filters['date_start']) && !empty($filters['date_end'])) {
             $query .= " AND timestamp BETWEEN ? AND ?";
             $params[] = $filters['date_start'];
@@ -181,20 +249,21 @@ class DbHandle {
             $params[] = $filters['date_end'];
             $types .= "s";
         }
-    
+
         $query .= " ORDER BY timestamp DESC";
-    
+
         $stmt = $this->conn->prepare($query);
-    
+
         if (!empty($params)) {
             $stmt->bind_param($types, ...$params);
         }
-    
+
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function exportHistory($format = 'json') {
+    public function exportHistory($format = 'json')
+    {
         $result = $this->getAllHistory(10000); // Limit besar agar semua data diekspor
 
         if ($format === 'csv') {
@@ -210,7 +279,8 @@ class DbHandle {
         return json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
-    public function getStats() {
+    public function getStats()
+    {
         $stats = [];
 
         $total = $this->conn->query("SELECT COUNT(*) AS total FROM {$this->historyTable}")->fetch_assoc();
@@ -225,7 +295,8 @@ class DbHandle {
         return $stats;
     }
 
-    public function fetchHistory($page = 1, $perPage = 10) {
+    public function fetchHistory($page = 1, $perPage = 10)
+    {
         $offset = ($page - 1) * $perPage;
         $stmt = $this->conn->prepare("
             SELECT * FROM {$this->historyTable}
@@ -235,11 +306,11 @@ class DbHandle {
         $stmt->bind_param("ii", $perPage, $offset);
         $stmt->execute();
         $results = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
         // Ambil total count
         $countResult = $this->conn->query("SELECT COUNT(*) as total FROM {$this->historyTable}");
         $total = $countResult->fetch_assoc()['total'];
-    
+
         return [
             'results' => $results,
             'total_count' => $total,
@@ -248,7 +319,118 @@ class DbHandle {
         ];
     }
 
-    public function close() {
+    public function close()
+    {
         $this->conn->close();
     }
+
+    // API V2
+    public function insertHistoryV2($data)
+    {
+        // Ambil semua field dan fallback ke null/default jika tidak tersedia
+        $video_id      = $data['video_id'];
+        $domain        = $data['domain'] ?? null;
+        $title         = $data['title'] ?? null;
+        $length        = $data['length'] ?? null;
+        $size          = $data['size'] ?? null;
+        $thumbnail_url = $data['thumbnail_url'] ?? null;
+        $player_url    = $data['player_url'] ?? null;
+        $video_src     = $data['video_src'] ?? null;
+        $upload_at     = $data['upload_at'] ?? null;
+        $user_ip       = $data['user_ip'] ?? null;
+        $is_bulk       = $data['is_bulk'] ?? 0;
+        $bulk_id       = $data['bulk_id'] ?? null;
+    
+        // SQL dengan conditional COALESCE dan NULLIF agar tidak overwrite dengan NULL
+        $sql = "
+            INSERT INTO {$this->historyTableV2}
+            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                domain        = COALESCE(NULLIF(VALUES(domain), NULL), domain),
+                title         = COALESCE(NULLIF(VALUES(title), NULL), title),
+                length        = COALESCE(NULLIF(VALUES(length), NULL), length),
+                size          = COALESCE(NULLIF(VALUES(size), NULL), size),
+                thumbnail_url = COALESCE(NULLIF(VALUES(thumbnail_url), NULL), thumbnail_url),
+                player_url    = COALESCE(NULLIF(VALUES(player_url), NULL), player_url),
+                video_src     = COALESCE(NULLIF(VALUES(video_src), NULL), video_src),
+                upload_at     = COALESCE(NULLIF(VALUES(upload_at), NULL), upload_at),
+                user_ip       = COALESCE(NULLIF(VALUES(user_ip), NULL), user_ip),
+                is_bulk       = COALESCE(NULLIF(VALUES(is_bulk), NULL), is_bulk),
+                bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
+                updatedAt     = CURRENT_TIMESTAMP
+        ";
+    
+        $stmt = $this->conn->prepare($sql);
+    
+        // Bind semua variabel (harus variabel, bukan ekspresi langsung)
+        $stmt->bind_param(
+            "sssissssssis",
+            $video_id,
+            $domain,
+            $title,
+            $length,
+            $size,
+            $thumbnail_url,
+            $player_url,
+            $video_src,
+            $upload_at,
+            $user_ip,
+            $is_bulk,
+            $bulk_id
+        );
+    
+        $stmt->execute();
+        $stmt->close();
+    }
+    
+    
+
+    public function getHistoryV2($video_id)
+    {
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->historyTableV2} WHERE video_id = ?");
+        $stmt->bind_param("s", $video_id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    public function getAllHistoryV2($limit = 100, $offset = 0)
+    {
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->historyTableV2} ORDER BY createdAt DESC LIMIT ? OFFSET ?");
+        $stmt->bind_param("ii", $limit, $offset);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    public function deleteHistoryV2($video_id)
+    {
+        $stmt = $this->conn->prepare("DELETE FROM {$this->historyTableV2} WHERE video_id = ?");
+        $stmt->bind_param("s", $video_id);
+        return $stmt->execute();
+    }
+
+    public function fetchHistoryV2($page = 1, $perPage = 10)
+    {
+        $offset = ($page - 1) * $perPage;
+        $stmt = $this->conn->prepare("
+            SELECT * FROM {$this->historyTableV2}
+            ORDER BY createdAt DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $perPage, $offset);
+        $stmt->execute();
+        $results = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        // Ambil total count
+        $countResult = $this->conn->query("SELECT COUNT(*) as total FROM {$this->historyTableV2}");
+        $total = $countResult->fetch_assoc()['total'];
+
+        return [
+            'results' => $results,
+            'total_count' => $total,
+            'page' => $page,
+            'per_page' => $perPage
+        ];
+    }
+    
 }
