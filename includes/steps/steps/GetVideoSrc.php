@@ -4,7 +4,7 @@ class GetVideoSrc
 {
     public function __construct() {}
 
-    public function process($fullURL, $baseURL)
+    public function process($fullURL, $baseURL, $refererURL = null)
     {
         if (!$fullURL || !filter_var($fullURL, FILTER_VALIDATE_URL)) {
             return [
@@ -15,10 +15,9 @@ class GetVideoSrc
             return;
         }
 
-        return $this->curlToVideoSrc($fullURL, $baseURL);
+        return $this->curlToVideoSrc($fullURL, $baseURL, $refererURL);
     }
-
-    public function curlToVideoSrc($fullURL, $baseURL)
+    public function curlToVideoSrc($fullURL, $baseURL, $refererURL)
     {
         $ch = curl_init($fullURL);
         curl_setopt_array($ch, [
@@ -27,7 +26,7 @@ class GetVideoSrc
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_HTTPHEADER => [
-                'Referer: https://www.metrolagu.cam/',
+                "Referer: {$refererURL}",
                 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
             ]
         ]);
@@ -38,8 +37,11 @@ class GetVideoSrc
         if ($httpcode >= 400 || !$html) {
             return [
                 'status' => 'error',
-                'message' => 'Gagal mengakses fullURL',
-                'data' => null,
+                'message' => 'Gagal mengakses fullURL saat mengakses fullURL',
+                'data' => [
+                    'fullURL' => $fullURL,
+                    'http_code' => $httpcode,
+                ],
                 'step' => 4
             ];
         }
@@ -52,14 +54,20 @@ class GetVideoSrc
                 $videoURL = rtrim($baseURL, '/') . $videoURL;
             }
             // $videoURL = $this->encodeUrlParams($videoURL);
-            $videoURL = $this->smartEncodeUrl($videoURL);
+            $videoURLSmartEncoded = $this->smartEncodeUrl($videoURL);
+            $finalVideoURL = $this->checkFinalSrcUrl($videoURL, $fullURL);
             return [
                 'status' => 'success',
                 'message' => 'Video URL ditemukan.',
                 'step' => 4,
                 'data' => [
-                    'video_src' => $videoURL,
+                    'video_src' => $finalVideoURL['url'],
+                    'video_src_http_code' => $finalVideoURL['http_code'],
+                    "header_response" => $finalVideoURL['header_response'],
+                    'data_final' => $finalVideoURL,
                     'html' => $html,
+                    'videoUrlBefore' => $videoURL,
+                    'videoUrlSmartEncoded' => $videoURLSmartEncoded,
                 ]
             ];
         } else {
@@ -126,5 +134,101 @@ class GetVideoSrc
     
         return $encodedUrl;
     }
+
+    private function sanitizeUrl($url) 
+    {
+        $parts = parse_url($url);
+
+        if (!isset($parts['scheme']) || !isset($parts['host'])) {
+            return false; // URL tidak valid
+        }
     
+        $sanitized = $parts['scheme'] . '://' . $parts['host'];
+    
+        if (isset($parts['port'])) {
+            $sanitized .= ':' . $parts['port'];
+        }
+    
+        if (isset($parts['path'])) {
+            // Encode setiap segmen path
+            $segments = explode('/', $parts['path']);
+            $encodedSegments = array_map('rawurlencode', $segments);
+            $sanitized .= implode('/', $encodedSegments);
+        }
+    
+        if (isset($parts['query'])) {
+            // Pisahkan query param, encode *value* saja
+            $queryParts = explode('&', $parts['query']);
+            $encodedQueryParts = [];
+    
+            foreach ($queryParts as $q) {
+                if (strpos($q, '=') !== false) {
+                    [$key, $val] = explode('=', $q, 2);
+                    $encodedQueryParts[] = rawurlencode($key) . '=' . rawurlencode($val);
+                } else {
+                    $encodedQueryParts[] = rawurlencode($q);
+                }
+            }
+    
+            $sanitized .= '?' . implode('&', $encodedQueryParts);
+        }
+    
+        if (isset($parts['fragment'])) {
+            $sanitized .= '#' . rawurlencode($parts['fragment']);
+        }
+    
+        return $sanitized;
+    }
+
+    private function checkFinalSrcUrl($url, $fullURL = null)
+    {
+        $url = $this->sanitizeUrl($url);
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_NOBODY => true, // Hanya ambil header
+            CURLOPT_FOLLOWLOCATION => false, // Kita handle redirect sendiri
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HEADER => true,
+            CURLOPT_HTTPHEADER => [
+                "Referer: {$fullURL}",
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+            ]
+        ]);
+    
+        $response = curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if ($response === false) {
+            $error = curl_error($ch);
+            $errno = curl_errno($ch);
+            curl_close($ch);
+            
+            return [
+                "url" => $url,
+                "http_code" => $httpcode,
+                "error" => $error,
+                "errno" => $errno,
+                "header_response" => null
+            ];
+        }
+    
+        if ($httpcode === 302) {
+            if (preg_match('/Location:\s*(.*)/i', $response, $matches)) {
+                $redirectUrl = trim($matches[1]);
+                return [
+                    "url" => $redirectUrl,
+                    "http_code" => $httpcode,
+                    "header_response" => $response,
+                ];
+            }
+        }
+
+        return [
+            "url" => $url,
+            "http_code" => $httpcode,
+            "header_response" => $response,
+        ];
+    }
 }

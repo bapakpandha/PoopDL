@@ -47,6 +47,7 @@ class GetMetrolaguPostIdAndDetail
             'size' => null,
             'uploadate' => null,
             'thumbnail' => null,
+            'metrolagu_url' => null,
             'metrolagu_post_id' => null
         ];
 
@@ -90,11 +91,17 @@ class GetMetrolaguPostIdAndDetail
 
         // Pola wajib: metrolagu_post_id
         if (preg_match('/poopiframe\'\s*,\s*\'https:\/\/berlagu\.com\/jembud\/\'\s*,\s*\'length\'\s*,\s*\'([a-z0-9]+)\'/i', $html, $m)) {
+            $result['metrolagu_url'] = null;
             $result['metrolagu_post_id'] = $m[1];
+        } elseif (preg_match("/'poopiframe'\s*,\s*'(https?:\/\/[^']+?)'\s*,\s*'length'\s*,\s*'([^']*)'\s*,\s*'([^']*)'/
+", $html, $m)) {
+                $result['metrolagu_url'] = $m[1];      // Contoh: https://berlagu.com/xxx/ Jadikan sebagai referer untuk mengakses data selanjutnya
+                $result['metrolagu_post_id']      = $m[2];      // Contoh: 336d6537336c737674766930
         } else {
             return [
                 'status' => 'error',
                 'message' => 'Gagal menemukan ID video (metrolagu_post_id)',
+                'data' => $html,
                 'step' => 2
             ];
         }

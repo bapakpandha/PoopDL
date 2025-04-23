@@ -6,7 +6,7 @@ class GetVidSrcPlayerUrl
     {
     }
 
-    public function process($post_id)
+    public function process($post_id, $url)
     {
         if (!$post_id || !preg_match('/^[a-z0-9]+$/i', $post_id)) {
             return [
@@ -19,11 +19,11 @@ class GetVidSrcPlayerUrl
             ];
         }
 
-        $result = $this->getWatchPage($post_id);
+        $result = $this->getWatchPage($post_id, $url);
         return $result;
     }
 
-    private function getWatchPage($post_id)
+    private function getWatchPage($post_id, $RefererUrl)
     {
         $url = "https://www.metrolagu.cam/watch";
         $postFields = http_build_query(['poop' => $post_id]);
@@ -36,8 +36,7 @@ class GetVidSrcPlayerUrl
             CURLOPT_TIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_HTTPHEADER => [
-                'Origin: https://www.metrolagu.cam',
-                'Referer: https://www.metrolagu.cam/jembud/716d7963347434626e633170',
+                "Referer: {$RefererUrl}",
                 'Content-Type: application/x-www-form-urlencoded',
                 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
             ]

@@ -29,7 +29,7 @@ class ValidateUrl
 
     private function validateUrl($url)
     {
-        return preg_match('#/f/([a-zA-Z0-9]+)#', $url);;
+        return (preg_match('#/f/([a-zA-Z0-9]+)#', $url) || strpos($url, 'justpaste') !== false);
     }
 
 }
