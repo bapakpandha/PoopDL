@@ -266,7 +266,16 @@ if ($method === 'POST' && $endpoint === 'v2/bulk') {
             echo jsonResponse('error', 'Parameter "url" wajib ada');
         exit;
     }
-    require_once __DIR__ . '/../includes/bulk/BulkV2.php';
+
+    if (isset($input['justpaste']) && $input['justpaste'] === true) {
+        require_once __DIR__ . '/../includes/bulk/BulkV2_scrapeFolder.php';
+        $bulk = new BulkV2Justpaste($input['url']);
+        $result = $bulk->process();
+        echo jsonResponse($result['status'], $result['message'], $result['data'] ?? null, $verbose ? ['debug' => $result['debug'] ?? null] : []);
+        exit;
+    }
+    
+    require_once __DIR__ . '/../includes/bulk/BulkV2_scrapeVideo.php';
     $bulk = new BulkV2($input['url']);
     $result = $bulk->process();
     echo jsonResponse($result['status'], $result['message'], $result['data'] ?? null, $verbose ? ['debug' => $result['debug'] ?? null] : []);

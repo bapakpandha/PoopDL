@@ -55,7 +55,7 @@ switch ($step) {
     case 3:
         require_once __DIR__ . '/steps/GetVidSrcPlayerUrl.php';
         $getVidSrcPlayerUrl = new GetVidSrcPlayerUrl();
-        $result = $getVidSrcPlayerUrl->process($input['metrolagu_post_id']);
+        $result = $getVidSrcPlayerUrl->process($input['metrolagu_post_id'], $input['url']);
         if ($isDbEnabled && $result['status'] == 'success') {
             $db->insertHistoryV2([
                 'video_id'      => $result['data']['video_id'],
@@ -70,7 +70,8 @@ switch ($step) {
         $getVideoSrc = new GetVideoSrc();
         $fullURL = $input['fullURL'] ?? '';
         $baseURL = $input['baseURL'] ?? '';
-        $result = $getVideoSrc->process($fullURL, $baseURL);
+        $refererURL = $input['metrolagu_url'] ?? '';
+        $result = $getVideoSrc->process($fullURL, $baseURL, $refererURL);
         if ($isDbEnabled && $result['status'] == 'success') {
             $db->insertHistoryV2([
                 'video_id'      => $input['video_id'],
