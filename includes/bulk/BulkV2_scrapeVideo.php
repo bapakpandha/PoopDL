@@ -7,6 +7,7 @@ class BulkV2
     private $inputUrl;
     private $config;
     private $db;
+    private $isDbEnabled;
     private $results = [];
     private $logs = [];
 
@@ -14,6 +15,11 @@ class BulkV2
     {
         $this->inputUrl = trim($inputUrl);
         $this->config = !empty($config) ? $config : include __DIR__ . '/../config.php';
+        $this->isDbEnabled = $this->config['enable_history'] ?? false;
+        if ($this->isDbEnabled) {
+            require_once __DIR__ . '/../db/DbHandle.php';
+            $this->db = new DbHandle();
+        }
     }
 
     public function process()
@@ -28,29 +34,42 @@ class BulkV2
         if (!$html) {
             return $this->formatError("Gagal mengambil halaman dari URL folder");
         }
-        
+
         $ids = $this->extractVideoIds($html);
         if (empty($ids)) {
             return $this->formatError("Tidak ditemukan URL /d/{id} pada halaman");
         }
 
-        $title = $this->extractFolderTitle($html); 
-
+        $title = $this->extractFolderTitle($html);
+        $videoList = [];
         $listUrl = [];
         foreach ($ids as $id) {
-            $videoUrl = $this->buildDUrl($this->inputUrl, $id);
+            $videoBuildedUrl = $this->buildDUrl($this->inputUrl, $id);
+            $videoUrl = $videoBuildedUrl['fullUrl'];
+
+            $videoList[] = [
+                "video_id" => $id,
+                "domain" => $videoBuildedUrl['domain']
+            ];
+
             $listUrl[] = [
                 "url" => $videoUrl,
                 "type" => "dood_video"
             ];
         }
+
+        // Check db enabled
+        if ($this->isDbEnabled && ($videoList)) {
+            $bulk_id = $this->db->insertHistoryBulkWithBulkUrlV2($videoList, $this->inputUrl, $title);
+        }
+
         return [
             "status" => "success",
             "message" => "Ditemukan " . count($listUrl) . " URL video pada folder",
             "data" => [
                 "result" => $listUrl,
                 "url" => $this->inputUrl,
-                "folder_title" => $title
+                "folder_title" => $title,
             ],
             "failed" => []
         ];
@@ -94,7 +113,12 @@ class BulkV2
     private function buildDUrl($baseFolderUrl, $videoId)
     {
         $parsed = parse_url($baseFolderUrl);
-        return $parsed['scheme'] . '://' . $parsed['host'] . '/d/' . $videoId;
+        $fullUrl =  $parsed['scheme'] . '://' . $parsed['host'] . '/d/' . $videoId;
+        $domain = $parsed['host'];
+        return [
+            "fullUrl" => $fullUrl,
+            "domain" => $domain,
+        ];
     }
 
     private function extractVdeoUrls($html)

@@ -88,56 +88,6 @@ class DbHandle
         $this->conn->query($sql);
     }
 
-    private function createHistoryTableV2()
-    {
-        $sql = "CREATE TABLE IF NOT EXISTS {$this->historyTableV2} (
-            `id` INT(11) NOT NULL AUTO_INCREMENT,
-            `video_id` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
-            `domain` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
-            `title` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
-            `length` INT(11) NULL DEFAULT NULL,
-            `size` INT(11) NULL DEFAULT NULL,
-            `thumbnail_url` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
-            `player_url` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
-            `video_src` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
-            `upload_at` DATETIME NULL DEFAULT NULL,
-            `user_ip` VARCHAR(45) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
-            `is_bulk` TINYINT(1) NOT NULL DEFAULT 0,
-            `bulk_id` INT(11) NULL DEFAULT NULL,
-            `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`) USING BTREE,
-            UNIQUE INDEX `video_id` (`video_id`) USING BTREE,
-            INDEX `domain` (`domain`) USING BTREE,
-            INDEX `title` (`title`(255)) USING BTREE,
-            INDEX `createdAt` (`createdAt`) USING BTREE,
-            INDEX `user_ip` (`user_ip`) USING BTREE,
-            INDEX `is_bulk` (`is_bulk`) USING BTREE,
-            INDEX `bulk_id` (`bulk_id`) USING BTREE
-        )
-        COLLATE='utf8mb4_unicode_ci'
-        ENGINE=InnoDB
-        ;";
-
-        $this->conn->query($sql);
-    }
-
-    private function createBulkTableV2()
-    {
-        $sql = "CREATE TABLE IF NOT EXISTS {$this->bulkTableV2} (
-            `id` INT(11) NOT NULL AUTO_INCREMENT,
-            `url` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
-            `timestamp` DATETIME NULL DEFAULT current_timestamp(),
-            PRIMARY KEY (`id`) USING BTREE,
-            UNIQUE INDEX `url` (`url`) USING BTREE
-        )
-        COLLATE='utf8mb4_unicode_ci'
-        ENGINE=InnoDB
-        ;";
-
-        $this->conn->query($sql);
-    }
-
     public function insertBulkUrl($url)
     {
         $stmt = $this->conn->prepare("INSERT IGNORE INTO {$this->bulkTable} (url) VALUES (?)");
@@ -324,7 +274,62 @@ class DbHandle
         $this->conn->close();
     }
 
-    // API V2
+    ///////////////////////////////////////////
+    //////////////// API V2 ///////////////////
+    ///////////////////////////////////////////
+
+    private function createHistoryTableV2()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS {$this->historyTableV2} (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `video_id` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
+            `domain` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `title` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `length` INT(11) NULL DEFAULT NULL,
+            `size` INT(11) NULL DEFAULT NULL,
+            `thumbnail_url` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `player_url` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `video_src` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `upload_at` DATETIME NULL DEFAULT NULL,
+            `user_ip` VARCHAR(45) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
+            `is_bulk` TINYINT(1) NOT NULL DEFAULT 0,
+            `bulk_id` INT(11) NULL DEFAULT NULL,
+            `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`) USING BTREE,
+            UNIQUE INDEX `video_id` (`video_id`) USING BTREE,
+            INDEX `domain` (`domain`) USING BTREE,
+            INDEX `title` (`title`(255)) USING BTREE,
+            INDEX `createdAt` (`createdAt`) USING BTREE,
+            INDEX `user_ip` (`user_ip`) USING BTREE,
+            INDEX `is_bulk` (`is_bulk`) USING BTREE,
+            INDEX `bulk_id` (`bulk_id`) USING BTREE
+        )
+        COLLATE='utf8mb4_unicode_ci'
+        ENGINE=InnoDB
+        ;";
+
+        $this->conn->query($sql);
+    }
+
+    private function createBulkTableV2()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS {$this->bulkTableV2} (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `title` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_bin',
+            `url` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_unicode_ci',
+            `timestamp` DATETIME NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`) USING BTREE,
+            UNIQUE INDEX `url` (`url`) USING BTREE,
+            INDEX `title` (`title`(255)) USING BTREE
+        )
+        COLLATE='utf8mb4_bin'
+        ENGINE=InnoDB
+        ;";
+
+        $this->conn->query($sql);
+    }
+
     public function insertHistoryV2($data)
     {
         // Ambil semua field dan fallback ke null/default jika tidak tersedia
@@ -340,7 +345,7 @@ class DbHandle
         $user_ip       = $data['user_ip'] ?? null;
         $is_bulk       = $data['is_bulk'] ?? 0;
         $bulk_id       = $data['bulk_id'] ?? null;
-    
+
         // SQL dengan conditional COALESCE dan NULLIF agar tidak overwrite dengan NULL
         $sql = "
             INSERT INTO {$this->historyTableV2}
@@ -360,9 +365,9 @@ class DbHandle
                 bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
                 updatedAt     = CURRENT_TIMESTAMP
         ";
-    
+
         $stmt = $this->conn->prepare($sql);
-    
+
         // Bind semua variabel (harus variabel, bukan ekspresi langsung)
         $stmt->bind_param(
             "sssissssssis",
@@ -379,12 +384,10 @@ class DbHandle
             $is_bulk,
             $bulk_id
         );
-    
+
         $stmt->execute();
         $stmt->close();
     }
-    
-    
 
     public function getHistoryV2($video_id)
     {
@@ -432,5 +435,79 @@ class DbHandle
             'per_page' => $perPage
         ];
     }
-    
+
+    public function insertHistoryBulkWithBulkUrlV2(array $videoList, string $bulkUrl, ?string $bulkTitle = null)
+    {
+        if (empty($videoList)) return;
+
+        $bulk_id = null;
+
+        $sqlSelect = "SELECT id FROM {$this->bulkTableV2} WHERE url = ?";
+        $stmtSelect = $this->conn->prepare($sqlSelect);
+        $stmtSelect->bind_param("s", $bulkUrl);
+        $stmtSelect->execute();
+        $stmtSelect->bind_result($existingId);
+        if ($stmtSelect->fetch()) {
+            $bulk_id = $existingId;
+        }
+        $stmtSelect->close();
+
+        if (!$bulk_id) {
+            $sqlInsert = "INSERT INTO {$this->bulkTableV2} (url, title) VALUES (?, ?)";
+            $stmtInsert = $this->conn->prepare($sqlInsert);
+            $stmtInsert->bind_param("ss", $bulkUrl, $bulkTitle);
+            $stmtInsert->execute();
+            $bulk_id = $stmtInsert->insert_id;
+            $stmtInsert->close();
+        }
+
+        $placeholders = [];
+        $values = [];
+
+        foreach ($videoList as $video) {
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $values[] = $video['video_id'];
+            $values[] = $video['domain'] ?? null;
+            $values[] = $video['title'] ?? null;
+            $values[] = $video['length'] ?? null;
+            $values[] = $video['size'] ?? null;
+            $values[] = $video['thumbnail_url'] ?? null;
+            $values[] = $video['player_url'] ?? null;
+            $values[] = $video['video_src'] ?? null;
+            $values[] = $video['upload_at'] ?? null;
+            $values[] = $video['user_ip'] ?? null;
+            $values[] = 1;
+            $values[] = $bulk_id;
+        }
+
+        $sql = "
+            INSERT INTO {$this->historyTableV2}
+            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id)
+            VALUES " . implode(", ", $placeholders) . "
+            ON DUPLICATE KEY UPDATE
+                domain        = COALESCE(NULLIF(VALUES(domain), NULL), domain),
+                title         = COALESCE(NULLIF(VALUES(title), NULL), title),
+                length        = COALESCE(NULLIF(VALUES(length), NULL), length),
+                size          = COALESCE(NULLIF(VALUES(size), NULL), size),
+                thumbnail_url = COALESCE(NULLIF(VALUES(thumbnail_url), NULL), thumbnail_url),
+                player_url    = COALESCE(NULLIF(VALUES(player_url), NULL), player_url),
+                video_src     = COALESCE(NULLIF(VALUES(video_src), NULL), video_src),
+                upload_at     = COALESCE(NULLIF(VALUES(upload_at), NULL), upload_at),
+                user_ip       = COALESCE(NULLIF(VALUES(user_ip), NULL), user_ip),
+                is_bulk       = COALESCE(NULLIF(VALUES(is_bulk), NULL), is_bulk),
+                bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
+                updatedAt     = CURRENT_TIMESTAMP
+            ";
+
+        $types = str_repeat("sssissssssis", count($videoList)); // 12 fields x N rows
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param($types, ...$values);
+        $stmt->execute();
+        $stmt->close();
+
+        return $bulk_id;
+    }
+
+
 }
