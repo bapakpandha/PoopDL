@@ -5,28 +5,38 @@ import { cn } from '../../__components/Utils';
 import { scrapeBulkUrl } from '../_utils/apiResolveBulk';
 import type { ScrapeResponse } from '../_utils/apiResolveBulk';
 import GetResults from './getResults';
+import StatusDropdown from './dropdownButtonOption';
 
 
 const FormValidations = {
     url: {
-        REGEX: /https?:\/\/(.+?)\/(f)\/([a-zA-Z0-9]+)/,
-        ERROR_MESSAGE: "Please enter a valid PoopDL Folder URL.",
+        REGEX: /https?:\/\/(.+?)\/(f)\/([a-zA-Z0-9]+)|.*justpaste.*/,
+        ERROR_MESSAGE: "Please enter a valid PoopDL Folder URL or justpaste URL.",
     },
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @next/next/no-img-element*/
-const formUi = (props: { className?: string }) => {
+const FormUi = (props: { className?: string }) => {
     const [errorMessage, setErrorMessage] = useState("");
     const [url, setUrl] = useState("");
     const [loading, setLoading] = useState(false);
     const [logMessage, setLogMessage] = useState("");
     const [resultsUrls, setResultsUrls] = useState<any>({});
+    const [bulkJenis, setBulkJenis] = useState("");
+    const [isResultHidden, setIsResulthidden] = useState(true);
 
+    interface BulkJenisChangeHandler {
+        (newBulkJenis: string): void;
+    }
 
-    let payload: any = { url };
+    const handleBulkJenisChange: BulkJenisChangeHandler = (newBulkJenis) => {
+        setBulkJenis(newBulkJenis);
+    };
 
+    const handleResultHiddenn = () => {
+        setIsResulthidden(!isResultHidden);
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,6 +58,11 @@ const formUi = (props: { className?: string }) => {
             return;
         }
 
+        const payload: any = {
+            url: url,
+            justpaste: bulkJenis === "Justpaste"
+        };
+
         try {
             const res = scrapeBulkUrl(payload);
             res.then((data: ScrapeResponse) => {
@@ -58,8 +73,7 @@ const formUi = (props: { className?: string }) => {
                 }
                 setLogMessage(data.message);
                 setLoading(false);
-                console.log(data.data);
-                setResultsUrls(data.data);
+                setResultsUrls(data.data?.result);
             });
         } catch (error) {
             setErrorMessage("An error occurred while processing the URL.");
@@ -79,21 +93,20 @@ const formUi = (props: { className?: string }) => {
             <form className="w-full space-y-2" onSubmit={handleSubmit}>
                 <div className="flex w-full items-center space-x-2">
                     <input
+                        name='bulk_URL'
                         type="text"
                         placeholder="Paste your PoopHD Folder URL here..."
                         className="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                     />
-                    <button
-                        type="submit"
-                        disabled={loading || !url}
-                        className="[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 aria-invalid:border-destructive aria-invalid:ring-destructive/20 bg-teal-500 dark:aria-invalid:ring-destructive/40 dark:bg-teal-700 dark:hover:bg-teal-600 disabled:opacity-50 disabled:pointer-events-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 font-medium gap-2 h-9 has-[>svg]:px-3 hover:bg-teal-600 inline-flex items-center justify-center outline-none px-4 py-2 rounded-md shadow-xs shrink-0 text-sm text-white transition-all whitespace-nowrap"
-                        onClick={handleSubmit}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-download h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
-                        {loading ? "Memproses..." : "Fetch URL"}
-                    </button>
+
+                    <StatusDropdown
+                        onChange={handleBulkJenisChange}
+                        isLoadings={loading}
+                        buttonUrl={url}
+                        handleSubmit={handleSubmit}
+                    />
                 </div>
             </form>
             {logMessage !== "" && !errorMessage && (
@@ -104,10 +117,19 @@ const formUi = (props: { className?: string }) => {
             )}
 
             {resultsUrls && resultsUrls.length > 0 && (
-                <div className="flex flex-col w-full mt-4 space-y-2">
-                    <GetResults urls={resultsUrls} />
+                <div className='flex flex-col items-center'>
+                    <button
+                        onClick={handleResultHiddenn}
+                        className="mt-4 focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
+                    >
+                        {isResultHidden ? "Show Result" : "Hide Result"}
+                    </button>
+                    <div className={`flex flex-col w-full mt-4 space-y-2 ${isResultHidden ? "hidden" : ""}`}>
+                        <GetResults urls={resultsUrls} />
+                    </div>
                 </div>
             )}
+
 
         </div>
 
@@ -115,4 +137,4 @@ const formUi = (props: { className?: string }) => {
     )
 }
 
-export default formUi
+export default FormUi
