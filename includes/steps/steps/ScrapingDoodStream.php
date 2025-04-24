@@ -38,7 +38,7 @@ class ScrapingDoodStream
         }
 
         $baseDoodstreamUrl = 'https://doodstream.com/';
-        $ch = curl_init($baseDoodstreamUrl . $type . '/' . $videoId);
+        $ch = curl_init($baseDoodstreamUrl . 'e' . '/' . $videoId);
 
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -68,7 +68,7 @@ class ScrapingDoodStream
                     'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
                 ]
             ]);
-    
+
             $response = curl_exec($ch2);
             $httpCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
             curl_close($ch2);
@@ -99,13 +99,16 @@ class ScrapingDoodStream
                 'step' => 6
             ];
         }
-
+        if (preg_match('/<video[^>]+poster=["\']([^"\']+)["\']/i', $response, $matches)) {
+            $posterUrl = $matches[1];
+        }
+        
         if (preg_match('#\?token=([a-z0-9]+)&expiry=#i', $response, $matches_token)) {
             $token = $matches_token[1];
             $doodstream_params_url = '?token=' . $token . '&expiry=';
         } else {
             return [
-            'status' => 'error',
+                'status' => 'error',
                 'message' => 'Gagal mendapatkan token dari Doodstream',
                 'data' => [
                     'url_doodstream' => $doodstreamURL,
@@ -146,7 +149,7 @@ class ScrapingDoodStream
         }
 
         $videoSrcUrlDoodstream = $response . $this->cloneMakePlay($token);
-
+        $detilVideo = $this->getDoodstreamDetailVideo('https://' . $domain . '/d/' . $videoId);
         return [
             'status' => 'success',
             'message' => 'Berhasil mendapatkan video dari Doodstream',
@@ -158,17 +161,62 @@ class ScrapingDoodStream
                 'hasil_curl_pass_md5' => $response,
                 'final_url' => $videoSrcUrlDoodstream,
                 'video_src' => $videoSrcUrlDoodstream,
+                'video_id' => $videoId,
+                'domain' => $domain,
+                'title' => $detilVideo['detail']['title'],
+                'length' => $detilVideo['detail']['duration'],
+                'size' => $detilVideo['detail']['filesize'],
+                'uploadate' => $detilVideo['detail']['uploadDate'],
+                'thumbnail' => $posterUrl,
+                'detil_video' => $detilVideo,
             ],
             'step' => 6
         ];
     }
 
-    private function cloneMakePlay($token) {
+    private function cloneMakePlay($token)
+    {
         $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         $random = '';
         for ($i = 0; $i < 10; $i++) {
             $random .= $chars[random_int(0, strlen($chars) - 1)];
         }
         return $random . "?token={$token}&expiry=" . round(microtime(true) * 1000); // milidetik
+    }
+
+    private function getDoodstreamDetailVideo($url)
+    {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+            ]
+        ]);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        if (preg_match('/<title>(.*?)<\/title>/i', $response, $m)) {
+            $title = trim($m[1]);
+        }
+
+        if (preg_match('/<div class="length">.*?<\/i>\s*(.*?)\s*<\/div>.*?<div class="size">.*?<\/i>\s*(.*?)\s*<\/div>.*?<div class="uploadate">.*?<\/i>\s*(.*?)\s*<\/div>/is', $response, $matches)) {
+            $duration = $matches[1];   // 11:12
+            $filesize = $matches[2];   // 70.7 MB
+            $uploadDate = $matches[3]; // Apr 15, 2025
+        }
+        return [
+            'detail' => [
+                'duration' => $duration ?? '',
+                'filesize' => $filesize ?? '',
+                'uploadDate' => $uploadDate ?? '',
+                'title' => $title ?? '',
+                'url' => $url,
+            ],
+        ];
     }
 }
