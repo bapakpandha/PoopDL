@@ -14,7 +14,7 @@ export async function scrapeVideoStep(step: number, payload: any) {
 }
 
 export interface ScrapeResponse {
-    status: "success" | "error";
+    status: "success" | "error" | "retry";
     message: string;
     step: number;
     data?: any;
