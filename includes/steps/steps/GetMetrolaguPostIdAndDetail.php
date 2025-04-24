@@ -99,10 +99,13 @@ class GetMetrolaguPostIdAndDetail
                 $result['metrolagu_post_id']      = $m[2];      // Contoh: 336d6537336c737674766930
         } else {
             return [
-                'status' => 'error',
-                'message' => 'Gagal menemukan ID video (metrolagu_post_id)',
-                'data' => $html,
-                'step' => 2
+                'status' => 'retry',
+                'message' => 'Gagal menemukan ID video (metrolagu_post_id), mencoba mendeteksi doodstream...',
+                'data' => [
+                    'fullURL' => $url,
+                    'html' => $html,
+                ],
+                'step' => 4
             ];
         }
 
@@ -192,6 +195,7 @@ class GetMetrolaguPostIdAndDetail
     public function convertTanggalToDate($tanggalStr)
     {
         $bulanMap = [
+            // Bahasa Indonesia
             'Januari' => '01',
             'Februari' => '02',
             'Maret' => '03',
@@ -204,19 +208,43 @@ class GetMetrolaguPostIdAndDetail
             'Oktober' => '10',
             'November' => '11',
             'Desember' => '12',
+    
+            // Bahasa Inggris (format pendek)
+            'Jan' => '01',
+            'Feb' => '02',
+            'Mar' => '03',
+            'Apr' => '04',
+            'May' => '05',
+            'Jun' => '06',
+            'Jul' => '07',
+            'Aug' => '08',
+            'Sep' => '09',
+            'Oct' => '10',
+            'Nov' => '11',
+            'Dec' => '12',
         ];
-
-        if (preg_match('/(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/', $tanggalStr, $m)) {
-            $day = str_pad($m[1], 2, '0', STR_PAD_LEFT); // misal: 8 -> 08
+    
+        // Format: Apr 15, 2025 atau 15 April 2025
+        if (preg_match('/([a-zA-Z]+)\s+(\d{1,2}),?\s+(\d{4})/', $tanggalStr, $m)) {
+            // Format Inggris: Apr 15, 2025
+            $monthName = ucfirst(strtolower($m[1]));
+            $day = str_pad($m[2], 2, '0', STR_PAD_LEFT);
+            $year = $m[3];
+        } elseif (preg_match('/(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/', $tanggalStr, $m)) {
+            // Format Indonesia: 15 April 2025
+            $day = str_pad($m[1], 2, '0', STR_PAD_LEFT);
             $monthName = ucfirst(strtolower($m[2]));
             $year = $m[3];
-
-            if (isset($bulanMap[$monthName])) {
-                $month = $bulanMap[$monthName];
-                return "$year-$month-$day";
-            }
+        } else {
+            return null;
         }
-
-        return null; // Kalau gagal parsing
+    
+        if (isset($bulanMap[$monthName])) {
+            $month = $bulanMap[$monthName];
+            return "$year-$month-$day";
+        }
+    
+        return null;
     }
+
 }

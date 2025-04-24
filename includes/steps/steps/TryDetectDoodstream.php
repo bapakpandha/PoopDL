@@ -2,6 +2,8 @@
 
 class TryDetectDoodstream
 {
+    private $fullURL = "";
+
     public function __construct() {}
 
     public function process($fullURL)
@@ -14,12 +16,26 @@ class TryDetectDoodstream
             ];
         }
 
-        return $this->curlToVideoSrc($fullURL);
+        $this->fullURL = $fullURL;
+
+        $html = $this->curlToVideoSrc($fullURL);
+        if (!$html['status']) {
+            return $html['result_message'];
+        }
+        $detectIframe = $this->detectIframeInHtml($html['result_message']['data']);
+        if ($detectIframe['status']) {
+            $html = $this->curlToVideoSrc($detectIframe['data']['iframesrc']);
+        }
+        $detectDood = $this->detectDoodstreamInHtml($html['result_message']['data']);
+        $detectDood['data']['fullUrl'] = $fullURL;
+        $detectDood['data']['url'] = $fullURL;
+        $detectDood['data']['iframe_src'] = $fullURL;
+        return $detectDood;
     }
 
-    private function curlToVideoSrc($fullURL)
+    private function curlToVideoSrc($URL)
     {
-        $ch = curl_init($fullURL);
+        $ch = curl_init($URL);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
@@ -37,65 +53,69 @@ class TryDetectDoodstream
 
         if ($httpcode >= 400 || !$html) {
             return [
-                'status' => 'error',
-                'message' => 'Gagal mengakses fullURL',
-                'data' => null,
-                'step' => 5
+                'status' => false,
+                'result_message' => [
+                    'status' => 'error',
+                    'message' => 'Gagal mengakses fullURL',
+                    'data' => ['curl_to' => $URL, 'http_code' => $httpcode],
+                    'step' => 5
+                ],
             ];
         }
 
+        return [
+            'status' => true,
+            'result_message' => [
+                'data' => $html,
+            ],
+        ];
+    }
+
+    private function detectIframeInHtml($html)
+    {
         if (preg_match('/<iframe[^>]+src=["\']([^"\']+)["\']/i', $html, $matches)) {
             $iframeSrc = $matches[1];
-            $ch = curl_init($iframeSrc);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_HTTPHEADER => [
-                    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+            $parsedBase = parse_url($this->fullURL);
+            $scheme = $parsedBase['scheme'] ?? 'https';
+            $host = $parsedBase['host'] ?? '';
+            if (strpos($iframeSrc, '/') === 0) {
+                $iframeSrc = $scheme . '://' . $host . $iframeSrc;
+            }
+            return [
+                'status' => true,
+                'data' => [
+                    'iframesrc' => $iframeSrc,
+                ],
+            ];
+        }
+
+        return [
+            'status' => false,
+            'data' => null,
+        ];
+    }
+
+    private function detectDoodstreamInHtml($html)
+    {
+        // cek apakah ada string "doodstream" didalamnya
+        if (stripos($html, 'doodstream') !== false) {
+            return [
+                'status' => 'success',
+                'message' => 'URL Doodstream terdeteksi.',
+                'step' => 5,
+                'data' => [
+                    'html' => $html
                 ]
-            ]);
-
-            $html = curl_exec($ch);
-            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpcode >= 400 || !$html) {
-                return [
-                    'status' => 'error',
-                    'message' => 'Gagal mengakses iframe src',
-                    'data' => [
-                        'iframe_src' => $iframeSrc,
-                        'http_code_iframe_src' => $httpcode,
-                        'html' => $html
-                    ],
-                    'step' => 5
-                ];
-            }
-
-            // cek apakah ada string "doodstream" didalamnya
-            if (stripos($html, 'doodstream') !== false) {
-                return [
-                    'status' => 'success',
-                    'message' => 'URL Doodstream terdeteksi.',
-                    'step' => 5,
-                    'data' => [
-                        'iframe_src' => $iframeSrc,
-                        'html' => $html
-                    ]
-                ];
-            } else {
-                return [
-                    'status' => 'error',
-                    'message' => 'Doodstream tidak terdeteksi. Membatalkan scraping',
-                    'step' => 5,
-                    'data' => [
-                        'iframe_src' => $iframeSrc,
-                        'html' => $html
-                    ]
-                ];
-            }
+            ];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => 'Doodstream tidak terdeteksi. Membatalkan scraping',
+                'step' => 5,
+                'data' => [
+                    'html' => $html
+                ]
+            ];
         }
     }
 }

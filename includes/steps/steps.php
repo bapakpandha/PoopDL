@@ -102,7 +102,14 @@ switch ($step) {
             if ($urlAndDomain['video_id'] !== null) {
                 $db->insertHistoryV2([
                     'video_id'      => $urlAndDomain['video_id'],
-                    'video_src'   => $result['data']['video_src'],
+                    'video_src'     => $result['data']['video_src'],
+                    'domain'        => $result['data']['domain'],
+                    'title'         => $result['data']['title'],
+                    'length'        => $getMetrolaguPostIdAndDetail->convertDurationToSeconds($result['data']['length']),
+                    'size'          => $getMetrolaguPostIdAndDetail->convertSizeToBytes($result['data']['size']),
+                    'thumbnail_url' => $result['data']['thumbnail'],
+                    'upload_at'     => $getMetrolaguPostIdAndDetail->convertTanggalToDate($result['data']['uploadate']),
+                    'user_ip'       => $_SERVER['REMOTE_ADDR'] ?? null,
                 ]);
             }
         }
