@@ -2,11 +2,9 @@
 
 class GetVidSrcPlayerUrl
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
-    public function process($post_id, $url)
+    public function process($post_id, $url, $metrolagu_url)
     {
         if (!$post_id || !preg_match('/^[a-z0-9]+$/i', $post_id)) {
             return [
@@ -19,13 +17,13 @@ class GetVidSrcPlayerUrl
             ];
         }
 
-        $result = $this->getWatchPage($post_id, $url);
+        $result = $this->getWatchPage($post_id, $url, $metrolagu_url);
         return $result;
     }
 
-    private function getWatchPage($post_id, $RefererUrl)
+    private function getWatchPage($post_id, $RefererUrl, $metrolagu_url)
     {
-        $url = "https://www.metrolagu.cam/watch";
+        $url = $metrolagu_url . $post_id;
         $postFields = http_build_query(['poop' => $post_id]);
 
         $ch = curl_init($url);
@@ -66,12 +64,14 @@ class GetVidSrcPlayerUrl
     private function parseWatchPage($html, $post_id)
     {
         // Pola untuk mendapatkan videoId dan fullURL
-        $pattern = '/var videoId = \'([a-z0-9]+)\';.*?baseURL = "(https?:\/\/[^"]+)";.*?playerPath = \'([^\']+)\';.*?fullURL = baseURL \+ playerPath;/s';
+        preg_match("/var\s+videoId\s*=\s*'([a-zA-Z0-9]+)'/", $html, $m1);
+        preg_match('/baseURL\s*=\s*"(https?:\/\/[^"]+)"/', $html, $m2);
+        preg_match("/playerPath\s*=\s*'([^']+)'/", $html, $m3);
 
-        if (preg_match($pattern, $html, $m)) {
-            $videoId = $m[1];
-            $baseURL = $m[2];
-            $playerPath = $m[3];
+        if ($m1 && $m2 && $m3) {
+            $videoId = $m1[1];
+            $baseURL = $m2[1];
+            $playerPath = $m3[1];
             $fullURL = $baseURL . $playerPath;
 
             return [
@@ -88,10 +88,15 @@ class GetVidSrcPlayerUrl
         } else {
             return [
                 'status' => 'error',
-                'message' => 'Gagal mendapatkan fullURL dari halaman http://www.metrolagu.cam/watch',
+                'message' => 'Gagal mendapatkan fullURL dari halaman http://www.metrolagu.cam/watch. Preg_match tidak cocok',
                 'data' => [
                     'post_id' => $post_id,
-                    'html' => $html
+                    'html' => $html,
+                    'hasil_deteksi_preg_match' => [
+                        'video_id' => $m1,
+                        'base_url' => $m2,
+                        'player_path' => $m3,
+                    ]
                 ],
                 'step' => 3
             ];

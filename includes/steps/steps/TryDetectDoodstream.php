@@ -25,6 +25,12 @@ class TryDetectDoodstream
         $detectIframe = $this->detectIframeInHtml($html['result_message']['data']);
         if ($detectIframe['status']) {
             $html = $this->curlToVideoSrc($detectIframe['data']['iframesrc']);
+            $iframeSrc = $detectIframe['data']['iframesrc'];
+            $detectDood = $this->detectDoodstreamInHtml($html['result_message']['data']);
+            $detectDood['data']['fullUrl'] = $iframeSrc;
+            $detectDood['data']['url'] = $iframeSrc;
+            $detectDood['data']['iframe_src'] = $iframeSrc;
+            return $detectDood;
         }
         $detectDood = $this->detectDoodstreamInHtml($html['result_message']['data']);
         $detectDood['data']['fullUrl'] = $fullURL;

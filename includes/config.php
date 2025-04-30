@@ -24,6 +24,9 @@ return [
     // Aktifkan atau nonaktifkan fitur penyimpanan history ke database
     'enable_history' => true,
 
+    'enable_get_summary' => true,
+    'summary_endpoint' => 'http://example.com/video_summary/get_summary/',
+
     // Konfigurasi koneksi database
     'db' => [
         'host' => 'localhost',

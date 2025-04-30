@@ -387,6 +387,10 @@ class DbHandle
 
         $stmt->execute();
         $stmt->close();
+        if ($this->config['enable_get_summary'] && (isset($this->config['summary_endpoint']) && is_string($this->config['summary_endpoint']) && trim($this->config['summary_endpoint']) !== '')) {
+            $this->getSummaryThumbnail($data, $this->config['summary_endpoint']);
+        }
+
     }
 
     public function getHistoryV2($video_id)
@@ -508,6 +512,34 @@ class DbHandle
 
         return $bulk_id;
     }
-
-
+    // dev
+    private function getSummaryThumbnail($data, $endpoint)
+    {
+        if (isset($data['video_src']) && !empty($data['video_src']) &&  is_string($data['video_src']) && trim($data['video_src']) !== '') {
+            $body_request = [
+                "url" => $data['video_src'],
+                "video_id" => $data['video_id'],
+            ];
+            
+            $url_api = $endpoint;
+            $ch = curl_init($url_api);
+            
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            
+            $json_body = json_encode($body_request);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $json_body);
+            
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($json_body)
+            ]);
+            $response = curl_exec($ch);
+            if (curl_errno($ch)) {
+                $error_message = curl_error($ch);
+                error_log('CURL Error: ' . $error_message);
+            }
+            curl_close($ch);
+        }
+    }
 }

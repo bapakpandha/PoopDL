@@ -49,7 +49,6 @@ if ($method === 'GET' && $endpoint === 'docs') {
         include $docsFile;
     } else {
         http_response_code(404);
-        echo 'Docs not found.';
     }
     exit;
 }   
