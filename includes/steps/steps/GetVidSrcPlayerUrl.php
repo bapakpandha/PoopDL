@@ -24,13 +24,13 @@ class GetVidSrcPlayerUrl
     private function getWatchPage($post_id, $RefererUrl, $metrolagu_url)
     {
         $url = $metrolagu_url . $post_id;
-        $postFields = http_build_query(['poop' => $post_id]);
+        // $postFields = http_build_query(['poop' => $post_id]);
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $postFields,
+            // CURLOPT_POST => true,
+            // CURLOPT_POSTFIELDS => $postFields,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_HTTPHEADER => [
@@ -39,12 +39,15 @@ class GetVidSrcPlayerUrl
                 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
                 'sec-fetch-dest: iframe',
                 'sec-fetch-mode: navigate',
-                'sec-fetch-site: same-origin',
-            ]
+                'sec-fetch-site: same-origin'
+            ],
+            CURLOPT_HEADER => false,
+            CURLINFO_HEADER_OUT => true
         ]);
 
         $html = curl_exec($ch);
         $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $requestHeaders = curl_getinfo($ch, CURLINFO_HEADER_OUT);
         curl_close($ch);
 
         if ($httpcode >= 400 || !$html) {
@@ -54,7 +57,8 @@ class GetVidSrcPlayerUrl
                 'data' => [
                     'post_id' => $post_id,
                     'http_code' => $httpcode,
-                    'html' => $html
+                    'html' => $html,
+                    'requestheaders' => $requestHeaders
                 ],
                 'step' => 3
             ];

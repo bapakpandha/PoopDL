@@ -24,7 +24,7 @@ class GetMetrolaguPostIdAndDetail
             ];
         }
 
-        $html = $this->curlGet($url, $httpcode);
+        $html = $this->curlGet($url, $httpcode, $finalUrl);
 
         if ($httpcode >= 400) {
             return [
@@ -48,7 +48,8 @@ class GetMetrolaguPostIdAndDetail
             'uploadate' => null,
             'thumbnail' => null,
             'metrolagu_url' => null,
-            'metrolagu_post_id' => null
+            'metrolagu_post_id' => null,
+            'origin_url' => $finalUrl
         ];
 
         // get $video_id from URL
@@ -117,7 +118,7 @@ class GetMetrolaguPostIdAndDetail
         ];
     }
 
-    public function curlGet($url, &$httpcode)
+    public function curlGet($url, &$httpcode, &$finalUrl)
     {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -131,6 +132,7 @@ class GetMetrolaguPostIdAndDetail
         ]);
         $response = curl_exec($ch);
         $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);
         return $response;
     }
