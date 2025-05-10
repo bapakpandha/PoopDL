@@ -86,9 +86,10 @@ class GetMetrolaguPostIdAndDetail
             $result['uploadate'] = trim($m[1]);
         }
 
-        if (preg_match('/#poopiframe\s*\{[^}]*background-image:\s*url\([\'"]?(.*?)[\'"]?\)/i', $html, $m)) {
+        if (preg_match('/(?<=^|[^{])[^}]*#poopiframe[^}]*\{[^}]*background-image\s*:\s*url\(\s*[\'"]?(.*?)[\'"]?\s*\)/is', $html, $m)) {
             $result['thumbnail'] = trim($m[1]);
         }
+        
 
         // Pola wajib: metrolagu_post_id
         if (preg_match('/poopiframe\'\s*,\s*\'https:\/\/berlagu\.com\/jembud\/\'\s*,\s*\'length\'\s*,\s*\'([a-z0-9]+)\'/i', $html, $m)) {
