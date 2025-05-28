@@ -2,11 +2,11 @@
 
 class DbHandle
 {
-    private $conn;
+    public $conn;
     private $historyTable = 'video_downloader_data';
     private $bulkTable = 'bulk_downloader_data';
-    private $historyTableV2 = 'poopDL_video_data';
-    private $bulkTableV2 = 'poopDL_bulk_data';
+    public $historyTableV2 = 'poopDL_video_data';
+    public $bulkTableV2 = 'poopDL_bulk_data';
     private $config;
 
     public function __construct()

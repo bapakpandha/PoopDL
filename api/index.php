@@ -281,6 +281,15 @@ if ($method === 'POST' && $endpoint === 'v2/bulk') {
     exit;
 }
 
+if ($method === 'POST' && $endpoint === 'v2/history') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    require_once __DIR__ . '/../includes/history/GetHistory.php';
+    $history = new GetHistory();
+    $result = $history->getHistory();
+    // echo jsonResponse($result['status'], $result['message'], $result['data'] ?? null, $verbose ? ['debug' => $result['debug'] ?? null] : []);
+    exit;
+}
+
 echo jsonResponse('error', 'Endpoint tidak dikenal: ' . $endpoint);
 
 exit;
