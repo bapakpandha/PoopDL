@@ -34,6 +34,7 @@ class GetHistory
             'has_summarized' => in_array($this->input['filterHasSummarized']['label'] ?? 'All', ['All', 'Summarized', 'Has Not Summarized Yet']) ? $this->input['filterHasSummarized']['label'] : 'All', // string: 'All' || 'Summarized' || 'Has Not Summarized Yet'. Default is 'All'
             'sort_by' => in_array($this->input['filterSortBy']['label'] ?? 'timestamp', ['Time Fetched', 'Name', 'Size', 'Length', 'Total Video']) ? $this->input['filterSortBy']['label'] : 'timestamp', // string: 'Time Fetched' || 'Name' || 'Size' || 'Length' || 'Total Video'. Default is 'Time Fetched'
             'sort_type' => in_array($this->input['filterSortType']['label'] ?? 'DESC', ['Ascending', 'Descending']) ? $this->input['filterSortType']['label'] : 'DESC', // string: 'Ascending' || 'Descending'. Default is 'Ascending'
+            'pagination_num' => is_numeric($this->input['pagination_num'] ?? null) && $this->input['pagination_num'] > 0 ? intval($this->input['pagination_num']) : 1,
         ];
 
         if ($filters['search_type'] == 'Folders') {
@@ -50,7 +51,7 @@ class GetHistory
             if (!empty($filters['date_start']) && !empty($filters['date_end'])) {
                 $query .= " AND timestamp BETWEEN ? AND ?";
                 $params[] = $filters['date_start'];
-                $params[] = $filters['date_end'];
+                $params[] = $filters['date_end'] . ' 23:59:59';
                 $types .= "ss";
             } elseif (!empty($filters['date_start'])) {
                 $query .= " AND timestamp >= ?";
@@ -58,7 +59,7 @@ class GetHistory
                 $types .= "s";
             } elseif (!empty($filters['date_end'])) {
                 $query .= " AND timestamp <= ?";
-                $params[] = $filters['date_end'];
+                $params[] = $filters['date_end'] . ' 23:59:59';
                 $types .= "s";
             }
 
@@ -86,7 +87,7 @@ class GetHistory
             if (!empty($filters['date_start']) && !empty($filters['date_end'])) {
                 $query .= " AND updatedAt BETWEEN ? AND ?";
                 $params[] = $filters['date_start'];
-                $params[] = $filters['date_end'];
+                $params[] = $filters['date_end'] . ' 23:59:59';
                 $types .= "ss";
             } elseif (!empty($filters['date_start'])) {
                 $query .= " AND updatedAt >= ?";
@@ -94,7 +95,7 @@ class GetHistory
                 $types .= "s";
             } elseif (!empty($filters['date_end'])) {
                 $query .= " AND updatedAt <= ?";
-                $params[] = $filters['date_end'];
+                $params[] = $filters['date_end'] . ' 23:59:59';
                 $types .= "s";
             }
 
@@ -129,7 +130,7 @@ class GetHistory
             }
         }
 
-        $query .= " LIMIT 15";
+        $query .= " LIMIT 20 OFFSET " . (($filters['pagination_num'] ?? 1) - 1) * 20;
 
         $stmt = $this->db->conn->prepare($query);
 
@@ -151,7 +152,7 @@ class GetHistory
                 'pagination_num' => 1,
             ],
             'logs' => [
-                    'filter' => $filters,
+                'filter' => $filters,
             ],
         ];
 
@@ -176,9 +177,9 @@ class GetHistory
                     'thumbnail_url' => $row['thumbnail_url'],
                     'summary_url' => '/video_summary/data/' . $row['video_id'] . '_summary.jpg',
                     'video_src' => $row['video_src'],
-                    'fetched_at' => $row['createdAt'],
-                    'size' => $row['size'],
-                    'length' => $row['length'],
+                    'fetched_at' => $row['updatedAt'],
+                    'size' => $row['size'] !== null ? $this->convertBytesToHumanReadable($row['size']) : null,
+                    'length' => $row['length'] !==null ? $this->convertSecondsToDuration($row['length']) : null,
                 ];
             }
         }
@@ -230,9 +231,9 @@ class GetHistory
                 'thumbnail_url' => $row['thumbnail_url'],
                 'summary_url' => '/video_summary/data/' . $row['video_id'] . '_summary.jpg',
                 'video_src' => $row['video_src'],
-                'fetched_at' => $row['createdAt'],
-                'size' => $row['size'],
-                'length' => $row['length'],
+                'fetched_at' => $row['updatedAt'],
+                'size' => $row['size'] !== null ? $this->convertBytesToHumanReadable($row['size']) : null,
+                'length' => $row['length'] !==null ? $this->convertSecondsToDuration($row['length']) : null,
             ];
         }
 
@@ -240,5 +241,36 @@ class GetHistory
             'data' => $listResults,
             'count' => count($listResults)
         ];
+    }
+
+    public function convertBytesToHumanReadable($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        }
+
+        $exp = floor(log($bytes, 1024));
+        $exp = min($exp, count($units) - 1); // maksimal TB
+
+        $value = $bytes / pow(1024, $exp);
+
+        return round($value, $precision) . ' ' . $units[$exp];
+    }
+
+    public function convertSecondsToDuration($seconds)
+    {
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $remainingSeconds = $seconds % 60;
+
+        if ($hours > 0) {
+            // Format: HH:MM:SS
+            return sprintf('%02d:%02d:%02d', $hours, $minutes, $remainingSeconds);
+        } else {
+            // Format: MM:SS
+            return sprintf('%02d:%02d', $minutes, $remainingSeconds);
+        }
     }
 }
