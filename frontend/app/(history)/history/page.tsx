@@ -1,7 +1,11 @@
 import Header from "../../__components/Header";
 import Footer from "../../__components/Footer";
 import HistoryMain from "../_components/HistoryMain";
-
+import { Metadata } from "next";
+export const metadata: Metadata = {
+  title: "History Page",
+  description: "View your history on this page",
+};
 export default function History() {
   return (
     <div className="relative flex min-h-screen flex-col">

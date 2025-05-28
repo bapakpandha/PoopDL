@@ -2,12 +2,14 @@
 import React from 'react';
 import { Save, Clock, Calendar1, EyeOff, Eye, ToggleLeft, ToggleRight, SlidersVertical, DownloadIcon, Link2 } from 'lucide-react';
 import { ResultItem } from '../_utils/apiResolveHistory';
+import ModalImage from 'react-modal-image';
 
 interface ResultCardProps {
     data: ResultItem;
     isInitialThumbnailHidden: boolean;
     isInitialSummaryShow: boolean;
     index?: number;
+    dataIndex?: number;
 }
 
 interface ButtonElementProps {
@@ -32,7 +34,7 @@ const ButtonElement = ({ svgelement, label, onclick, disabled, className }: Butt
     );
 };
 
-const ResultCard: React.FC<ResultCardProps> = ({ data, isInitialSummaryShow, isInitialThumbnailHidden, index }) => {
+const ResultCard: React.FC<ResultCardProps> = ({ data, isInitialSummaryShow, isInitialThumbnailHidden, index, dataIndex }) => {
     const [isThumbnailHidden, setThumbnailHidden] = React.useState(isInitialThumbnailHidden);
     const [isSummaryShow, setToggleSummary] = React.useState(isInitialSummaryShow);
     const [isShowVideo, setToggleShowVideo] = React.useState(false);
@@ -45,10 +47,15 @@ const ResultCard: React.FC<ResultCardProps> = ({ data, isInitialSummaryShow, isI
     }, [isInitialSummaryShow]);
 
     return (
-        <article key={index} className="bg-white flex flex-col justify-between relative mb-4 overflow-hidden rounded-xl border text-gray-700 shadow-md duration-500 ease-in-out hover:shadow-xl">
+        <article data-index={index} key={index} className="bg-white flex flex-col justify-between relative mb-4 overflow-hidden rounded-xl border text-gray-700 shadow-md duration-500 ease-in-out hover:shadow-xl">
             <div className={isThumbnailHidden ? "invisible max-h-3" : ""}>
                 {isShowVideo ? <video className="h-full max-h-96 w-full max-w-96 m-auto rounded-lg" controls> <source src={data.video_src} type="video/mp4" /> Your browser does not support the video tag. </video> :
-                    <img src={isSummaryShow ? (data.summary_url || "https://demofree.sirv.com/nope-not-here.jpg") : data.thumbnail_url || "https://demofree.sirv.com/nope-not-here.jpg"} alt="" className="max-h-96 max-w-96 m-auto" />
+                    <ModalImage
+                        small={isSummaryShow ? (data.summary_url || "https://demofree.sirv.com/nope-not-here.jpg") : data.thumbnail_url || "https://demofree.sirv.com/nope-not-here.jpg"}
+                        large={isSummaryShow ? (data.summary_url || "https://demofree.sirv.com/nope-not-here.jpg") : data.thumbnail_url || "https://demofree.sirv.com/nope-not-here.jpg"}
+                        alt={data.title}
+                        className="max-h-96 max-w-96 m-auto rounded-lg"
+                    />
                 }
             </div>
 

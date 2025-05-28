@@ -68,8 +68,8 @@ const optionsSortBy: sortByOption[] = [
 ];
 
 const optionsSortType = [
-  { label: "Ascending" },
   { label: "Descending" },
+  { label: "Ascending" },
 ];
 
 const formatDate = (date: Date) => date.toISOString().split("T")[0];

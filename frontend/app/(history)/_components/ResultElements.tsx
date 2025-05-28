@@ -54,7 +54,7 @@ const ResultsElements: React.FC<ResultsElementsProps> = ({ data, loading }) => {
             </div>
             <div className={`w-full mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isResultHidden ? "hidden" : ""}`}>
                 {data.map((item, index) => (
-                    <ResultCard data={item} isInitialSummaryShow={isShowSummarizedThumbnail} isInitialThumbnailHidden={isInitialThumbnailShow} />
+                    <ResultCard key={item.id} data={item} isInitialSummaryShow={isShowSummarizedThumbnail} isInitialThumbnailHidden={isInitialThumbnailShow} index={index} dataIndex={index} />
                 ))}
             </div>
         </div>
