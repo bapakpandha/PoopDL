@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function getHistory(payload: any) {
-    const res = await fetch("http://127.0.0.13/api/v2/history/", {
-    // const res = await fetch("/poop_dl/api/v2/history/", {
+    // const res = await fetch("http://127.0.0.13/api/v2/history/", {
+    const res = await fetch("/poop_dl/api/v2/history/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
