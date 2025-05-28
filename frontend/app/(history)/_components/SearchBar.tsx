@@ -19,13 +19,23 @@ type isFetchedOption = {
   label: string;
 };
 
+type sortByOption = {
+  label: string;
+};
+
+type sortTypeOption = {
+  label: string;
+};
+
 export type SearchParams = {
   searchKeyword: string;
   filterSearchType: SearchTypeOption;
   filterDateScrappedStart: string;
   filterDateScrappedEnd: string;
   filterHasSummarized: HasSummarizedOption;
-  filterIsFetched: isFetchedOption
+  filterIsFetched: isFetchedOption;
+  filterSortBy: sortByOption;
+  filterSortType: sortTypeOption;
 };
 
 interface SearchBarProps {
@@ -49,6 +59,19 @@ const optionsIsFetched: isFetchedOption[] = [
   { label: "Has Not Fetched Yet" },
 ];
 
+const optionsSortBy: sortByOption[] = [
+  { label: "Time Fetched" }, // For files and folders
+  { label: "Name" }, // For files and folders
+  { label: "Size" }, // For files only
+  { label: "Length" }, // For files only
+  { label: "Total Videos" }, // For folders only
+];
+
+const optionsSortType = [
+  { label: "Ascending" },
+  { label: "Descending" },
+];
+
 const formatDate = (date: Date) => date.toISOString().split("T")[0];
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
@@ -70,11 +93,17 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
   const [filterIsFetched, setFilterIsFetched] =
     React.useState<isFetchedOption>(optionsIsFetched[0]);
 
+  const [filterSortBy, setFilterSortBy] =
+    React.useState<sortByOption>(optionsSortBy[0]);
+
+  const [filterSortType, setFilterSortType] =
+    React.useState(optionsSortType[0]);
+
   // Debounce submit
   React.useEffect(() => {
     const timeOutId = setTimeout(() => submitHandler(), 1000);
     return () => clearTimeout(timeOutId);
-  }, [searchKeyword, filterSearchType, filterHasSummarized]);
+  }, [searchKeyword, filterSearchType, filterHasSummarized, filterSortBy, filterSortType]);
 
   const filterShowHandler = () => {
     toggleShowFilter(!isShowFilter);
@@ -87,6 +116,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
     setFilterSearchType(optionsSearchTypes[0]);
     setFilterHasSummarized(optionsHasSummarized[0]);
     setFilterIsFetched(optionsIsFetched[0]);
+    setFilterSortBy(optionsSortBy[0]);
+    setFilterSortType(optionsSortType[0]);
   };
 
   const submitHandler = () => {
@@ -99,6 +130,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
       filterDateScrappedEnd,
       filterHasSummarized,
       filterIsFetched,
+      filterSortBy,
+      filterSortType,
     };
 
     onSubmit(params);
@@ -212,6 +245,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
               </label>
               <select
                 id="hasSummarized"
+                disabled={filterSearchType.label === "Folders"}
                 value={filterHasSummarized.label}
                 onChange={(e) =>
                   setFilterHasSummarized(
@@ -237,6 +271,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
               </label>
               <select
                 id="isFetched"
+                disabled={filterSearchType.label === "Folders"}
                 value={filterIsFetched.label}
                 onChange={(e) =>
                   setFilterIsFetched(
@@ -248,6 +283,65 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
                 className="text-gray-600 mt-2 block w-full cursor-pointer rounded-md border border-gray-100 bg-gray-100 px-2 py-2 shadow-sm outline-none focus:border-teal-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
               >
                 {optionsIsFetched.map((option, index) => (
+                  <option key={index}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label
+                htmlFor="sortBy"
+                className="text-sm font-medium text-stone-600"
+              >
+                Sort By
+              </label>
+                <select
+                id="sortBy"
+                value={filterSortBy.label}
+                onChange={(e) =>
+                  setFilterSortBy(
+                  optionsSortBy.find(
+                    (opt) => opt.label === e.target.value
+                  ) || optionsSortBy[0]
+                  )
+                }
+                className="text-gray-600 mt-2 block w-full cursor-pointer rounded-md border border-gray-100 bg-gray-100 px-2 py-2 shadow-sm outline-none focus:border-teal-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                >
+                {optionsSortBy
+                  .filter((option) => {
+                  if (filterSearchType.label === "Folders") {
+                    return ["Time Fetched", "Name", "Total Videos"].includes(option.label);
+                  } else if (filterSearchType.label === "Files") {
+                    return ["Time Fetched", "Name", "Size", "Length"].includes(option.label);
+                  }
+                  return true;
+                  })
+                  .map((option, index) => (
+                  <option key={index}>{option.label}</option>
+                  ))}
+                </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label
+                htmlFor="sortType"
+                className="text-sm font-medium text-stone-600"
+              >
+                Sort Type
+              </label>
+              <select
+                id="sortType"
+                value={filterSortType.label}
+                onChange={(e) =>
+                  setFilterSortType(
+                    optionsSortType.find(
+                      (opt) => opt.label === e.target.value
+                    ) || optionsSortType[0]
+                  )
+                }
+                className="text-gray-600 mt-2 block w-full cursor-pointer rounded-md border border-gray-100 bg-gray-100 px-2 py-2 shadow-sm outline-none focus:border-teal-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              >
+                {optionsSortType.map((option, index) => (
                   <option key={index}>{option.label}</option>
                 ))}
               </select>

@@ -21,8 +21,8 @@ export default function HistoryMain() {
             const response = await getHistory(params);
 
             const result = params.filterSearchType.label === "Folders"
-                ? response.result.folder_data
-                : response.result.video_data;
+                ? response.data.result.folder_data
+                : response.data.result.video_data;
 
             setResults(result);
         } catch (error) {

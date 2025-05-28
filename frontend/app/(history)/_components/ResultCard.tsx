@@ -76,7 +76,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ data, isInitialSummaryShow, isI
                 <ul className='pt-2'>
                     <li className="flex items-center text-left">
                         <Link2 className="mr-1 w-3 h-3 text-2xl text-teal-600" />
-                        <span className="text-xs">{data.video_url}</span>
+                        <a href={data.video_url} target="_blank" className="text-xs">{data.video_url}</a>
                     </li>
                 </ul>
 
