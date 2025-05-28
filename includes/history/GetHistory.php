@@ -65,7 +65,7 @@ class GetHistory
 
             switch ($filters['sort_by']) {
                 case 'Time Fetched':
-                    $query .= " ORDER BY updatedAt " . ($filters['sort_type'] === 'Ascending' ? "ASC" : "DESC");
+                    $query .= " ORDER BY timestamp " . ($filters['sort_type'] === 'Ascending' ? "ASC" : "DESC");
                     break;
                 case 'Name':
                     $query .= " ORDER BY title " . ($filters['sort_type'] === 'Ascending' ? "ASC" : "DESC");
