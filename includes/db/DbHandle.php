@@ -296,6 +296,7 @@ class DbHandle
             `bulk_id` INT(11) NULL DEFAULT NULL,
             `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            `fetch_attempts` INT(11) NOT NULL DEFAULT 1,
             PRIMARY KEY (`id`) USING BTREE,
             UNIQUE INDEX `video_id` (`video_id`) USING BTREE,
             INDEX `domain` (`domain`) USING BTREE,
@@ -332,7 +333,6 @@ class DbHandle
 
     public function insertHistoryV2($data)
     {
-        // Ambil semua field dan fallback ke null/default jika tidak tersedia
         $video_id      = $data['video_id'];
         $domain        = $data['domain'] ?? null;
         $title         = $data['title'] ?? null;
@@ -345,12 +345,12 @@ class DbHandle
         $user_ip       = $data['user_ip'] ?? null;
         $is_bulk       = $data['is_bulk'] ?? 0;
         $bulk_id       = $data['bulk_id'] ?? null;
-
-        // SQL dengan conditional COALESCE dan NULLIF agar tidak overwrite dengan NULL
+    
+        // INSERT dengan kolom insert_attempts
         $sql = "
             INSERT INTO {$this->historyTableV2}
-            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id, fetch_attempts)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
             ON DUPLICATE KEY UPDATE
                 domain        = COALESCE(NULLIF(VALUES(domain), NULL), domain),
                 title         = COALESCE(NULLIF(VALUES(title), NULL), title),
@@ -363,12 +363,12 @@ class DbHandle
                 user_ip       = COALESCE(NULLIF(VALUES(user_ip), NULL), user_ip),
                 is_bulk       = COALESCE(NULLIF(VALUES(is_bulk), NULL), is_bulk),
                 bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
-                updatedAt     = CURRENT_TIMESTAMP
+                updatedAt     = CURRENT_TIMESTAMP,
+                fetch_attempts = fetch_attempts + 1
         ";
-
+    
         $stmt = $this->conn->prepare($sql);
-
-        // Bind semua variabel (harus variabel, bukan ekspresi langsung)
+    
         $stmt->bind_param(
             "sssissssssis",
             $video_id,
@@ -384,14 +384,20 @@ class DbHandle
             $is_bulk,
             $bulk_id
         );
-
+    
         $stmt->execute();
         $stmt->close();
-        if ($this->config['enable_get_summary'] && (isset($this->config['summary_endpoint']) && is_string($this->config['summary_endpoint']) && trim($this->config['summary_endpoint']) !== '')) {
+    
+        if (
+            $this->config['enable_get_summary'] &&
+            isset($this->config['summary_endpoint']) &&
+            is_string($this->config['summary_endpoint']) &&
+            trim($this->config['summary_endpoint']) !== ''
+        ) {
             $this->getSummaryThumbnail($data, $this->config['summary_endpoint']);
         }
-
     }
+    
 
     public function getHistoryV2($video_id)
     {

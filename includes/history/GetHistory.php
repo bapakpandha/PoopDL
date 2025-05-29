@@ -105,12 +105,6 @@ class GetHistory
                 $query .= " AND (length IS NULL OR size <= 0 OR video_src IS NULL)";
             }
 
-            if (!empty($filters['has_summarized']) && $filters['has_summarized'] === 'Summarized') {
-                $query .= " AND thumbnail_url IS NOT NULL";
-            } elseif (!empty($filters['has_summarized']) && $filters['has_summarized'] === 'Has Not Summarized Yet') {
-                $query .= " AND thumbnail_url IS NULL";
-            }
-
             switch ($filters['sort_by']) {
                 case 'Time Fetched':
                     $query .= " ORDER BY updatedAt " . ($filters['sort_type'] === 'Ascending' ? "ASC" : "DESC");
@@ -273,4 +267,6 @@ class GetHistory
             return sprintf('%02d:%02d', $minutes, $remainingSeconds);
         }
     }
+
+    
 }
