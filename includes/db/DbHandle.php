@@ -475,7 +475,7 @@ class DbHandle
         $values = [];
 
         foreach ($videoList as $video) {
-            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)";
             $values[] = $video['video_id'];
             $values[] = $video['domain'] ?? null;
             $values[] = $video['title'] ?? null;
@@ -507,7 +507,7 @@ class DbHandle
                 is_bulk       = COALESCE(NULLIF(VALUES(is_bulk), NULL), is_bulk),
                 bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
                 updatedAt     = CURRENT_TIMESTAMP,
-                fetch_attempts = fetch_attempts + 1
+                fetch_attempts = fetch_attempts
             ";
 
         $types = str_repeat("sssissssssis", count($videoList)); // 12 fields x N rows
