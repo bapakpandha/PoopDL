@@ -475,7 +475,7 @@ class DbHandle
         $values = [];
 
         foreach ($videoList as $video) {
-            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
             $values[] = $video['video_id'];
             $values[] = $video['domain'] ?? null;
             $values[] = $video['title'] ?? null;
@@ -492,7 +492,7 @@ class DbHandle
 
         $sql = "
             INSERT INTO {$this->historyTableV2}
-            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id)
+            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id, fetch_attempts)
             VALUES " . implode(", ", $placeholders) . "
             ON DUPLICATE KEY UPDATE
                 domain        = COALESCE(NULLIF(VALUES(domain), NULL), domain),
@@ -506,10 +506,12 @@ class DbHandle
                 user_ip       = COALESCE(NULLIF(VALUES(user_ip), NULL), user_ip),
                 is_bulk       = COALESCE(NULLIF(VALUES(is_bulk), NULL), is_bulk),
                 bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
-                updatedAt     = CURRENT_TIMESTAMP
+                updatedAt     = CURRENT_TIMESTAMP,
+                fetch_attempts = fetch_attempts + 1
             ";
 
         $types = str_repeat("sssissssssis", count($videoList)); // 12 fields x N rows
+        $types .= str_repeat("i", count($videoList));
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param($types, ...$values);
