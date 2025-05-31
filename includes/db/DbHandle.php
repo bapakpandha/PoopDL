@@ -346,7 +346,7 @@ class DbHandle
         $is_bulk       = $data['is_bulk'] ?? 0;
         $bulk_id       = $data['bulk_id'] ?? null;
     
-        // INSERT dengan kolom insert_attempts
+        // INSERT dengan kolom fetch_attempts
         $sql = "
             INSERT INTO {$this->historyTableV2}
             (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id, fetch_attempts)
@@ -449,9 +449,10 @@ class DbHandle
     public function insertHistoryBulkWithBulkUrlV2(array $videoList, string $bulkUrl, ?string $bulkTitle = null)
     {
         if (empty($videoList)) return;
-
+    
         $bulk_id = null;
-
+    
+        // Cari apakah bulk sudah ada
         $sqlSelect = "SELECT id FROM {$this->bulkTableV2} WHERE url = ?";
         $stmtSelect = $this->conn->prepare($sqlSelect);
         $stmtSelect->bind_param("s", $bulkUrl);
@@ -461,7 +462,8 @@ class DbHandle
             $bulk_id = $existingId;
         }
         $stmtSelect->close();
-
+    
+        // Insert jika belum ada
         if (!$bulk_id) {
             $sqlInsert = "INSERT INTO {$this->bulkTableV2} (url, title) VALUES (?, ?)";
             $stmtInsert = $this->conn->prepare($sqlInsert);
@@ -470,12 +472,13 @@ class DbHandle
             $bulk_id = $stmtInsert->insert_id;
             $stmtInsert->close();
         }
-
+    
+        // Persiapan bulk insert
         $placeholders = [];
         $values = [];
-
+    
         foreach ($videoList as $video) {
-            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)"; // 13 kolom
             $values[] = $video['video_id'];
             $values[] = $video['domain'] ?? null;
             $values[] = $video['title'] ?? null;
@@ -486,10 +489,11 @@ class DbHandle
             $values[] = $video['video_src'] ?? null;
             $values[] = $video['upload_at'] ?? null;
             $values[] = $video['user_ip'] ?? null;
-            $values[] = 1;
-            $values[] = $bulk_id;
+            $values[] = 1;         // is_bulk
+            $values[] = $bulk_id;  // bulk_id
+            // 13th: fetch_attempts, always 1 for new inserts
         }
-
+    
         $sql = "
             INSERT INTO {$this->historyTableV2}
             (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id, fetch_attempts)
@@ -508,16 +512,16 @@ class DbHandle
                 bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
                 updatedAt     = CURRENT_TIMESTAMP,
                 fetch_attempts = fetch_attempts + 1
-            ";
-
-        $types = str_repeat("sssissssssis", count($videoList)); // 12 fields x N rows
-        $types .= str_repeat("i", count($videoList));
-
+        ";
+    
+        $types = str_repeat("sssissssssis", count($videoList)); // 12
+        $types .= str_repeat("i", count($videoList)); // untuk fetch_attempts, integer ke-13
+    
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param($types, ...$values);
         $stmt->execute();
         $stmt->close();
-
+    
         return $bulk_id;
     }
     // dev
