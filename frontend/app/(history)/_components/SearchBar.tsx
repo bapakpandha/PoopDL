@@ -100,10 +100,10 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
     React.useState(optionsSortType[0]);
 
   // Debounce submit
-  React.useEffect(() => {
-    const timeOutId = setTimeout(() => submitHandler(), 1000);
-    return () => clearTimeout(timeOutId);
-  }, [searchKeyword, filterSearchType, filterHasSummarized, filterSortBy, filterSortType]);
+  // React.useEffect(() => {
+  //   const timeOutId = setTimeout(() => submitHandler(), 1000);
+  //   return () => clearTimeout(timeOutId);
+  // }, [searchKeyword, filterSearchType, filterHasSummarized, filterSortBy, filterSortType]);
 
   const filterShowHandler = () => {
     toggleShowFilter(!isShowFilter);
