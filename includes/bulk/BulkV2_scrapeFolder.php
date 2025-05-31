@@ -5,12 +5,19 @@ require_once __DIR__ . '/steps/ValidateUrl.php';
 class BulkV2justpaste {
     private $inputUrl;
     private $config;
+    private $db;
     private $folderUrls = [];
     private $videoUrls= [];
+    private $isDbEnabled;
 
     public function __construct($inputUrl = null, $config = []) {
         $this->inputUrl = trim($inputUrl);
         $this->config = !empty($config) ? $config : include __DIR__ . '/../config.php';
+        $this->isDbEnabled = $this->config['enable_history'] ?? false;
+        if ($this->isDbEnabled) {
+            require_once __DIR__ . '/../db/DbHandle.php';
+            $this->db = new DbHandle();
+        }
     }
 
     public function process() {
@@ -46,6 +53,20 @@ class BulkV2justpaste {
             ];
         }
 
+        if(!empty($this->videoUrls)) {
+            $videoList = [];
+
+            foreach ($this->videoUrls as $videoUrl) {
+            $videoList[] = [
+                "video_id" => $videoUrl["video_id"],
+                "domain" => $videoUrl["domain"],
+            ];
+            }
+            if ($this->isDbEnabled && ($videoList)) {
+                $bulk_id = $this->db->insertHistoryBulkWithBulkUrlV2($videoList, $this->inputUrl, $this->inputUrl);
+            }
+        }
+
         return [
             "status" => "success",
             "message" => "Ditemukan " . count($listUrl) . " URL",
@@ -62,7 +83,7 @@ class BulkV2justpaste {
         preg_match_all('/%2Ff%2F([a-zA-Z0-9]+)/i', $html, $encoded_matches);
         $all_urls = array_merge($matches[1], $encoded_matches[1]);
         $unique_urls = array_values(array_unique($all_urls));
-    
+
         return $unique_urls;
     }
 
@@ -71,39 +92,39 @@ class BulkV2justpaste {
         preg_match_all('/https%3A%2F%2F[^\s"\'<>]*%2Ff%2F[a-zA-Z0-9]+/', $html, $encoded_matches);
 
         $decoded = array_map('urldecode', $encoded_matches[0]);
-    
+
         // 4. Gabungkan semua hasil & hapus duplikat
         $all_urls = array_merge($matches[0], $decoded);
         $unique_urls = array_values(array_unique($all_urls));
-    
+
         return $unique_urls;
     }
 
     private function extractVideoUrls($html) {
         // 1. Match URL biasa: https://domain.com/d/abc123 atau /e/abc123
         preg_match_all('/https?:\/\/[^\s"\'<>]*\/[de]\/[a-zA-Z0-9]+/', $html, $matches);
-    
+
         // 2. Match encoded URLs: https%3A%2F%2Fdomain.com%2Fd%2Fabc123 atau %2Fe%2Fabc123
         preg_match_all('/https%3A%2F%2F[^\s"\'<>]*%2F[de]%2F[a-zA-Z0-9]+/', $html, $encoded_matches);
-    
+
         // 3. Decode encoded matches
         $decoded = array_map('urldecode', $encoded_matches[0]);
-    
+
         // 4. Gabungkan semua hasil & hapus duplikat
         $all_urls = array_merge($matches[0], $decoded);
         $unique_urls = array_values(array_unique($all_urls));
-    
+
         return $unique_urls;
     }
-        
+
     private function extractVideoIds($html) {
         preg_match_all('/\/(d|e)\/([a-zA-Z0-9]+)/', $html, $matches);
         preg_match_all('/%2F(d|e)%2F([a-zA-Z0-9]+)/i', $html, $encoded_matches);
         $all_ids = array_merge($matches[2], $encoded_matches[2]);
         $unique_ids = array_values(array_unique($all_ids));
-    
+
         return $unique_ids;
-    }    
+    }
 
     private function formatError($msg) {
         return [
@@ -124,7 +145,7 @@ class BulkV2justpaste {
         $html = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         return $http_code >= 400 ? false : $html;
     }
 
@@ -137,7 +158,7 @@ class BulkV2justpaste {
         $parsed = parse_url($baseFolderUrl);
         return $parsed['scheme'] . '://' . $parsed['host'] . '/f/' . $videoId;
     }
-    
+
     private function extractVideoUrlsData($html)
     {
         preg_match_all('/https?:\/\/([^\s"\'<>\/]+)\/d\/([a-zA-Z0-9]+)/', $html, $matches);

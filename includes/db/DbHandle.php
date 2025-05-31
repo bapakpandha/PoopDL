@@ -101,8 +101,8 @@ class DbHandle
     public function insertHistory($data)
     {
         $stmt = $this->conn->prepare("
-            INSERT IGNORE INTO {$this->historyTable} 
-            (video_id, domain_url, hashed_key, auth_bearer, video_title, video_size, video_duration, decoded_src, is_bulk, bulk_url_id, user_ip) 
+            INSERT IGNORE INTO {$this->historyTable}
+            (video_id, domain_url, hashed_key, auth_bearer, video_title, video_size, video_duration, decoded_src, is_bulk, bulk_url_id, user_ip)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
@@ -345,8 +345,8 @@ class DbHandle
         $user_ip       = $data['user_ip'] ?? null;
         $is_bulk       = $data['is_bulk'] ?? 0;
         $bulk_id       = $data['bulk_id'] ?? null;
-    
-        // INSERT dengan kolom fetch_attempts
+
+        // INSERT dengan kolom insert_attempts
         $sql = "
             INSERT INTO {$this->historyTableV2}
             (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id, fetch_attempts)
@@ -366,9 +366,9 @@ class DbHandle
                 updatedAt     = CURRENT_TIMESTAMP,
                 fetch_attempts = fetch_attempts + 1
         ";
-    
+
         $stmt = $this->conn->prepare($sql);
-    
+
         $stmt->bind_param(
             "sssissssssis",
             $video_id,
@@ -384,10 +384,10 @@ class DbHandle
             $is_bulk,
             $bulk_id
         );
-    
+
         $stmt->execute();
         $stmt->close();
-    
+
         if (
             $this->config['enable_get_summary'] &&
             isset($this->config['summary_endpoint']) &&
@@ -397,7 +397,7 @@ class DbHandle
             $this->getSummaryThumbnail($data, $this->config['summary_endpoint']);
         }
     }
-    
+
 
     public function getHistoryV2($video_id)
     {
@@ -449,10 +449,9 @@ class DbHandle
     public function insertHistoryBulkWithBulkUrlV2(array $videoList, string $bulkUrl, ?string $bulkTitle = null)
     {
         if (empty($videoList)) return;
-    
+
         $bulk_id = null;
-    
-        // Cari apakah bulk sudah ada
+
         $sqlSelect = "SELECT id FROM {$this->bulkTableV2} WHERE url = ?";
         $stmtSelect = $this->conn->prepare($sqlSelect);
         $stmtSelect->bind_param("s", $bulkUrl);
@@ -462,8 +461,7 @@ class DbHandle
             $bulk_id = $existingId;
         }
         $stmtSelect->close();
-    
-        // Insert jika belum ada
+
         if (!$bulk_id) {
             $sqlInsert = "INSERT INTO {$this->bulkTableV2} (url, title) VALUES (?, ?)";
             $stmtInsert = $this->conn->prepare($sqlInsert);
@@ -472,13 +470,12 @@ class DbHandle
             $bulk_id = $stmtInsert->insert_id;
             $stmtInsert->close();
         }
-    
-        // Persiapan bulk insert
+
         $placeholders = [];
         $values = [];
-    
+
         foreach ($videoList as $video) {
-            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)"; // 13 kolom
+            $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $values[] = $video['video_id'];
             $values[] = $video['domain'] ?? null;
             $values[] = $video['title'] ?? null;
@@ -489,14 +486,13 @@ class DbHandle
             $values[] = $video['video_src'] ?? null;
             $values[] = $video['upload_at'] ?? null;
             $values[] = $video['user_ip'] ?? null;
-            $values[] = 1;         // is_bulk
-            $values[] = $bulk_id;  // bulk_id
-            // 13th: fetch_attempts, always 1 for new inserts
+            $values[] = 1;
+            $values[] = $bulk_id;
         }
-    
+
         $sql = "
             INSERT INTO {$this->historyTableV2}
-            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id, fetch_attempts)
+            (video_id, domain, title, length, size, thumbnail_url, player_url, video_src, upload_at, user_ip, is_bulk, bulk_id)
             VALUES " . implode(", ", $placeholders) . "
             ON DUPLICATE KEY UPDATE
                 domain        = COALESCE(NULLIF(VALUES(domain), NULL), domain),
@@ -510,18 +506,16 @@ class DbHandle
                 user_ip       = COALESCE(NULLIF(VALUES(user_ip), NULL), user_ip),
                 is_bulk       = COALESCE(NULLIF(VALUES(is_bulk), NULL), is_bulk),
                 bulk_id       = COALESCE(NULLIF(VALUES(bulk_id), NULL), bulk_id),
-                updatedAt     = CURRENT_TIMESTAMP,
-                fetch_attempts = fetch_attempts + 1
-        ";
-    
-        $types = str_repeat("sssissssssis", count($videoList)); // 12
-        $types .= str_repeat("i", count($videoList)); // untuk fetch_attempts, integer ke-13
-    
+                updatedAt     = CURRENT_TIMESTAMP
+            ";
+
+        $types = str_repeat("sssissssssis", count($videoList)); // 12 fields x N rows
+
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param($types, ...$values);
         $stmt->execute();
         $stmt->close();
-    
+
         return $bulk_id;
     }
     // dev
@@ -532,16 +526,16 @@ class DbHandle
                 "url" => $data['video_src'],
                 "video_id" => $data['video_id'],
             ];
-            
+
             $url_api = $endpoint;
             $ch = curl_init($url_api);
-            
+
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
-            
+
             $json_body = json_encode($body_request);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $json_body);
-            
+
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
                 'Content-Length: ' . strlen($json_body)
