@@ -39,8 +39,8 @@ const ResultFolder: React.FC<ResultFolderProps> = ({ data, loading }) => {
                 </button>
             </div>
             <div className={`w-full mt-6 grid grid-cols-1 gap-4 ${isResultHidden ? "hidden" : ""}`}>
-                {data.map((item) => (
-                    <ResultFolderCard data={item}/>
+                {data.map((item, index) => (
+                    <ResultFolderCard data={item} index={index}/>
                 ))}
             </div>
         </div>

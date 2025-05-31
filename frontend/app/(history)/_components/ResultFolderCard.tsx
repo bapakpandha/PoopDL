@@ -6,12 +6,13 @@ import ResultsElements from './ResultElements'
 
 interface ResultFolderCardProps {
     data: ResultFolderType;
+    index?: number;
 }
 
-const ResultFolderCard: React.FC<ResultFolderCardProps> = ({ data }) => {
+const ResultFolderCard: React.FC<ResultFolderCardProps> = ({ data, index }) => {
     const [isFolderOpen, toggleFolderOpen] = React.useState(false);
     return (
-        <div className='w-full flex flex-col bg-gray-100 rounded-xl border border-gray-100 p-4 text-left text-gray-600 shadow-lg sm:p-8'>
+        <div data-index={index} className='w-full flex flex-col bg-gray-100 rounded-xl border border-gray-100 p-4 text-left text-gray-600 shadow-lg sm:p-8'>
             <div className="w-full mt-4 flex align-middle items-center ">
                 {isFolderOpen ? (
                     <ChevronDown onClick={() => toggleFolderOpen(!isFolderOpen)} className='mr-4 w-8 h-8'></ChevronDown>

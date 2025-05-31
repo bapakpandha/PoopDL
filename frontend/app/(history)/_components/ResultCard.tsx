@@ -54,7 +54,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ data, isInitialSummaryShow, isI
                         small={isSummaryShow ? (data.summary_url || "https://demofree.sirv.com/nope-not-here.jpg") : data.thumbnail_url || "https://demofree.sirv.com/nope-not-here.jpg"}
                         large={isSummaryShow ? (data.summary_url || "https://demofree.sirv.com/nope-not-here.jpg") : data.thumbnail_url || "https://demofree.sirv.com/nope-not-here.jpg"}
                         alt={data.title}
-                        className="max-h-96 max-w-96 m-auto rounded-lg"
+                        className="max-h-64 max-w-64 m-auto rounded-lg"
                     />
                 }
             </div>
